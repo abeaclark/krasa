@@ -1,5 +1,5 @@
 export const colors = {
-  snow: '#FAF9F9',
+  snow: '#FFF',
   sunsetOrange: '#FE5F55',
   ebony: '#575A4B',
   grayBlue: '#8693AB',

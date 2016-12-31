@@ -7,7 +7,7 @@ import { rhythm } from 'utils/typography'
 import include from 'underscore.string/include'
 import Bio from 'components/Bio'
 import Headline from 'components/Headline'
-import Contact from 'components/Contact'
+import Products from 'components/Products'
 
 class BlogIndex extends React.Component {
   render () {
@@ -39,10 +39,9 @@ class BlogIndex extends React.Component {
       <DocumentTitle title={metadata.title}>
         <div>
           <Headline />
-          <Contact />
-          <ul>
+          <Products>
             {productLinks}
-          </ul>
+          </Products>
         </div>
       </DocumentTitle>
     )

@@ -3,6 +3,8 @@ import { rhythm } from 'utils/typography'
 import { prefixLink } from 'gatsby-helpers'
 import { getViewportWidth, getViewportHeight } from 'utils/helpers'
 import { colors } from 'utils/colors'
+import { Link } from 'react-router'
+import logo from '../media/logo.png'
 
 class Headline extends React.Component {
   render () {
@@ -14,35 +16,40 @@ class Headline extends React.Component {
         style={{
           minHeight: '100vh',
           position: 'relative',
+          background: colors.grayBlue,
         }}
       >
-        <div
-          style={{
-            margin: '0 auto',
-            width: minDimension,
-            height: minDimension,
-            borderRadius: '100%',
-            background: colors.ebony,
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          <div style={{ width: '100%', height: '100%', position: 'relative'}}>
-            <h1
-              style={{ 
-                background: colors.snow,
-                width: '100%',
-                padding: rhythm(1),
-                textAlign: 'center',
-                position: 'absolute',
-                top: '70%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',            
-              }}
-            >I BUILD WEBSITES</h1>
+        <div style={{ width: '100%', height: '100%', position: 'relative', background: colors.snow }}>
+          <div style={{width: '100%', height: rhythm(5), display: 'flex', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center'}}>
+            <Link
+              style={{boxShadow: 'none', display: 'inline-block', fontSize: rhythm(1)}}
+              to={prefixLink('/shows/')}
+            >
+              SHOWS
+            </Link>
+            <Link
+              style={{boxShadow: 'none', display: 'inline-block', fontSize: rhythm(1)}}
+              to={prefixLink('/about/')}
+            >
+              ABOUT
+            </Link>
+            <img src={logo} style={{height: rhythm(3)}}/>
+            <Link
+              style={{boxShadow: 'none', display: 'inline-block', fontSize: rhythm(1)}}
+              to={prefixLink('/shop/')}
+            >
+              SHOP
+            </Link>
+            <Link
+              style={{boxShadow: 'none', display: 'inline-block', fontSize: rhythm(1)}}
+              to={prefixLink('/contact/')}
+            >
+              CONTACT
+            </Link>
           </div>
+        </div>
+        <div style={{width: '100%', height: rhythm(5), bottom: 0, left: 0, position: 'absolute', background: colors.snow  }}>
+          
         </div>
       </div>
     )

@@ -6,7 +6,16 @@ const typography = new Typography({
   baseLineHeight: 1.56,
   googleFonts: [
     {
-      name: 'Source Sans Pro',
+      name: 'Poiret One',
+      styles: [
+        '200',
+        '400',
+        '400i',
+        '700',
+      ],
+    },
+    {
+      name: 'Dancing Script',
       styles: [
         '200',
         '400',
@@ -16,8 +25,8 @@ const typography = new Typography({
     },
   ],
   scaleRatio: 2.5,
-  headerFontFamily: ['Source Sans Pro', 'sans-serif'],
-  bodyFontFamily: ['Source Sans Pro', 'sans-serif'],
+  headerFontFamily: ['Poiret One', 'sans-serif'],
+  bodyFontFamily: ['Poiret One', 'sans-serif'],
   headerColor: 'hsla(0,0%,0%,0.85)',
   bodyColor: 'hsla(0,0%,0%,0.7)',
   headerWeight: '200',
