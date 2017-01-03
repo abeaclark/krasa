@@ -1,7 +1,8 @@
 export const colors = {
   snow: '#FFF',
-  sunsetOrange: '#FE5F55',
-  ebony: '#575A4B',
-  grayBlue: '#8693AB',
-  onyx: '#343F3E',
+  darkness: '#000000',
+  payneGrey: '#5D737E',
+  sunny: '#FFF07C',
+  honeydew: '#F0F7EE',
+  darkSea: '#87BBA2',
 }

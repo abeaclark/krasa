@@ -8,6 +8,8 @@ import include from 'underscore.string/include'
 import Bio from 'components/Bio'
 import Headline from 'components/Headline'
 import Products from 'components/Products'
+import Separator from 'components/Separator'
+import Focus from 'components/Focus'
 
 class BlogIndex extends React.Component {
   render () {
@@ -16,8 +18,8 @@ class BlogIndex extends React.Component {
     return (
       <DocumentTitle title={metadata.title}>
         <div>
-          <Headline />
-          <Products products={products} />
+          <Separator text="Focus" />
+          <Focus />
         </div>
       </DocumentTitle>
     )
@@ -55,3 +57,4 @@ export const pageQuery = `
   }
 }
 `
+// <Products products={products} />
