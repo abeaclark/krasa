@@ -9,8 +9,8 @@ class MainLabel extends React.Component {
         style={{
           position: 'absolute',
           left: '50%',
-          marginLeft: rhythm(-5),
-          marginTop: rhythm(-1.3),
+          marginLeft: rhythm(-2.5),
+          marginTop: rhythm(-3.3),
           padding: rhythm(1/2),
           display: 'inline-block',
           background: colors.snow,

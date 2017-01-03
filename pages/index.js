@@ -12,36 +12,12 @@ import Products from 'components/Products'
 class BlogIndex extends React.Component {
   render () {
     const metadata = get(this.props, 'data.site.siteMetadata')
-    const productLinks = []
     const products = get(this, 'props.data.allMarkdown.edges')
-    products.forEach((product) => {
-      if (product.node.path !== '/404/') {
-        const title = get(product, 'node.frontmatter.title') || product.node.path
-        productLinks.push(
-          <li
-            key={product.node.path}
-            style={{
-              marginBottom: rhythm(1/4),
-            }}
-          >
-            <Link
-              style={{boxShadow: 'none'}}
-              to={prefixLink(product.node.path)}
-            >
-              {product.node.frontmatter.title}
-            </Link>
-          </li>
-        )
-      }
-    })
-
     return (
       <DocumentTitle title={metadata.title}>
         <div>
           <Headline />
-          <Products>
-            {productLinks}
-          </Products>
+          <Products products={products} />
         </div>
       </DocumentTitle>
     )
@@ -70,6 +46,9 @@ export const pageQuery = `
         path
         frontmatter {
           title
+          price
+          attributes
+          photoURL
         }
       }
     }

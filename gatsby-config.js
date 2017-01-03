@@ -1,6 +1,6 @@
 const config = {
   siteMetadata: {
-    title: 'Momma Cookie',
+    title: 'Krasa',
     author: 'Abe Clark',
     homeCity: 'San Francisco',
   },
