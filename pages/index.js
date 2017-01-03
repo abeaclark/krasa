@@ -9,6 +9,7 @@ import Separator from 'components/Separator'
 import Focus from 'components/Focus'
 import Team from 'components/Team'
 import Process from 'components/Process'
+import InquiryForm from 'components/InquiryForm'
 
 class BlogIndex extends React.Component {
   render () {
@@ -17,12 +18,13 @@ class BlogIndex extends React.Component {
     return (
       <DocumentTitle title={metadata.title}>
         <div>
+          <Separator text="Process" />
+          <Process />
           <Separator text="Focus" />
           <Focus />
           <Separator text="Team" />
           <Team />
-          <Separator text="Process" />
-          <Process />
+          <InquiryForm />
         </div>
       </DocumentTitle>
     )

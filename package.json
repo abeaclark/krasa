@@ -7,10 +7,12 @@
     "url": "https://github.com/gatsbyjs/gatsby-starter-blog/issues"
   },
   "dependencies": {
+    "axios": "^0.15.3",
     "gatsby": "^1.0.0-alpha10",
     "glamor": "^2.20.12",
     "lodash": "^4.15.0",
     "moment": "^2.14.1",
+    "qs": "^6.3.0",
     "react-document-title": "^2.0.2",
     "react-icons": "^2.2.3",
     "react-responsive-grid": "^0.3.3",
