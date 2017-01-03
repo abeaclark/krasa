@@ -4,7 +4,7 @@ import { prefixLink } from 'gatsby-helpers'
 import { getViewportWidth, getViewportHeight } from 'utils/helpers'
 import { colors } from 'utils/colors'
 import { Link } from 'react-router'
-import logo from '../media/logo.png'
+// import logo from '../media/logo.png'
 import MainLabel from 'components/MainLabel'
 import ProductThumbnail from 'components/ProductThumbnail'
 

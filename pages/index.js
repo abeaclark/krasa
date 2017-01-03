@@ -5,11 +5,9 @@ import DocumentTitle from 'react-document-title'
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm } from 'utils/typography'
 import include from 'underscore.string/include'
-import Bio from 'components/Bio'
-import Headline from 'components/Headline'
-import Products from 'components/Products'
 import Separator from 'components/Separator'
 import Focus from 'components/Focus'
+import Team from 'components/Team'
 
 class BlogIndex extends React.Component {
   render () {
@@ -20,6 +18,8 @@ class BlogIndex extends React.Component {
         <div>
           <Separator text="Focus" />
           <Focus />
+          <Separator text="Team" />
+          <Team />
         </div>
       </DocumentTitle>
     )
