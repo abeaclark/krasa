@@ -26,7 +26,7 @@ const lineItem = ({ name, title, description, photo, }) =>
      <div
       key={name}
       style={{
-        flexBasis: '45%',
+        flexBasis: '49.5%',
         minWidth: '350px',
         display: 'flex',
         flexDirection: 'column',
@@ -40,7 +40,7 @@ const lineItem = ({ name, title, description, photo, }) =>
       <img
         src={photo}
         style={{
-          maxWidth: 'rhythm(12)',
+          width: '100%',
           borderTopRightRadius: '5%',
           borderTopLeftRadius: '5%',
         }}

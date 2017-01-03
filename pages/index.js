@@ -8,6 +8,7 @@ import include from 'underscore.string/include'
 import Separator from 'components/Separator'
 import Focus from 'components/Focus'
 import Team from 'components/Team'
+import Process from 'components/Process'
 
 class BlogIndex extends React.Component {
   render () {
@@ -20,6 +21,8 @@ class BlogIndex extends React.Component {
           <Focus />
           <Separator text="Team" />
           <Team />
+          <Separator text="Process" />
+          <Process />
         </div>
       </DocumentTitle>
     )
