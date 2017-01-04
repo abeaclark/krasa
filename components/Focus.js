@@ -48,7 +48,7 @@ const lineItem = ({ headlineText, supportText, key }) =>
             marginBottom: rhythm(1),
             textAlign: 'center',
             minWidth: rhythm(5),
-            },
+          },
           media(presets.tablet, {
             marginRight: rhythm(1),
             textAlign: 'left',

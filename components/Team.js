@@ -26,17 +26,21 @@ const lineItem = ({ name, title, description, photo, }) =>
   (
      <div
       key={name}
-      css={{
-        flexBasis: '49.5%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        background: colors.snow,
-        borderTopRightRadius: '5%',
-        borderTopLeftRadius: '5%',
-        borderBottom: `5px solid ${colors.sunny}`,
-        marginBottom: rhythm(1/2),
-      }}
+      css={[
+        {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          background: colors.snow,
+          borderTopRightRadius: '5%',
+          borderTopLeftRadius: '5%',
+          borderBottom: `5px solid ${colors.sunny}`,
+          marginBottom: rhythm(1/2),
+        },
+        media(presets.tablet, {
+          flexBasis: '49.5%',
+        }),
+      ]}
     >
       <img
         src={photo}

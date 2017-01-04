@@ -32,17 +32,21 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
   (
      <div
       key={key}
-      css={{
-        flexBasis: '33%',
-        minWidth: '250px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        background: colors.snow,
-        borderBottom: `5px solid ${colors.sunny}`,
-        padding: rhythm(1/2),
-        marginBottom: rhythm(1),
-      }}
+      css={[
+        {
+          minWidth: '250px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          background: colors.snow,
+          borderBottom: `5px solid ${colors.sunny}`,
+          padding: rhythm(1/2),
+          marginBottom: rhythm(1),
+        },
+        media(presets.tablet, {
+          flexBasis: '33%',
+        }),
+      ]}
     >
       <div
         css={{
@@ -105,7 +109,7 @@ class Process extends React.Component {
                   justifyContent: 'space-around',
                 },
                 media(presets.tablet, {
-                 flexDirection: 'row',
+                  flexDirection: 'row',
                 }),
             ]}
           >
