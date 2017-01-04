@@ -10,11 +10,12 @@ import Focus from 'components/Focus'
 import Team from 'components/Team'
 import Process from 'components/Process'
 import InquiryForm from 'components/InquiryForm'
+import BlogThumbnailContainer from 'components/BlogThumbnailContainer'
 
 class BlogIndex extends React.Component {
   render () {
     const metadata = get(this.props, 'data.site.siteMetadata')
-    const products = get(this, 'props.data.allMarkdown.edges')
+    const blogEntries = get(this, 'props.data.allMarkdown.edges')
     return (
       <DocumentTitle title={metadata.title}>
         <div>
@@ -22,6 +23,8 @@ class BlogIndex extends React.Component {
           <Process />
           <Separator text="Focus" />
           <Focus />
+          <Separator text="Blog" />
+          <BlogThumbnailContainer blogEntries={blogEntries} />
           <Separator text="Team" />
           <Team />
           <InquiryForm />
@@ -53,9 +56,8 @@ export const pageQuery = `
         path
         frontmatter {
           title
-          price
-          attributes
           photoURL
+          previewText
         }
       }
     }
