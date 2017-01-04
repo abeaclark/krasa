@@ -4,6 +4,7 @@ import { Container } from 'react-responsive-grid'
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm, adjustFontSizeToMSValue } from 'utils/typography'
 import { colors } from 'utils/colors'
+import '../css/prism-coy.css'
 
 class Template extends React.Component {
   render () {

@@ -1,25 +1,25 @@
 import React from 'react'
 import { rhythm } from 'utils/typography'
-import { prefixLink } from 'gatsby-helpers'
 import { getViewportWidth, getViewportHeight } from 'utils/helpers'
 import { colors } from 'utils/colors'
-import { Link } from 'react-router'
 // import logo from '../media/logo.png'
 import BlogThumbnail from 'components/BlogThumbnail'
 import SiteMargin from 'components/SiteMargin'
+import { css, media, presets, merge } from 'glamor'
 
 class BlogThumbnailContainer extends React.Component {
   render () {
     const blogEntries = this.props.blogEntries
-    const productElements = []
-    blogEntries.forEach((product) => {
-      if (product.node.path !== '/404/') {
-        productElements.push(
+    const entryElements = []
+    blogEntries.forEach((entry) => {
+      if (entry.node.path !== '/404/') {
+        entryElements.push(
           <BlogThumbnail
-            key={product.node.path}
-            title={product.node.frontmatter.title}
-            photoURL={product.node.frontmatter.photoURL}
-            previewText={product.node.frontmatter.previewText}
+            key={entry.node.path}
+            title={entry.node.frontmatter.title}
+            photoURL={entry.node.frontmatter.photoURL}
+            previewText={entry.node.frontmatter.previewText}
+            path={entry.node.path}
           />
         )
       }
@@ -33,14 +33,16 @@ class BlogThumbnailContainer extends React.Component {
       >
         <SiteMargin>
            <div
-                style={{
-                   display: 'flex',
-                   flexDirection: 'row',
-                   justifyContent: 'space-around',
-                   flexWrap: 'wrap',
-                }}
+                {...merge(
+                  {
+                     display: 'flex',
+                     flexDirection: 'row',
+                     justifyContent: 'space-around',
+                     flexWrap: 'wrap',
+                  },
+                )}
               >
-              {productElements}
+              {entryElements}
             </div>
         </SiteMargin> 
       </div>

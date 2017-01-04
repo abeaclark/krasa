@@ -1,17 +1,22 @@
 import React from 'react'
 import { rhythm } from 'utils/typography'
 import { colors } from 'utils/colors'
+import { prefixLink } from 'gatsby-helpers'
+import { Link } from 'react-router'
+
 
 class BlogThumbnail extends React.Component {
   render () {
+    console.log(this.props.path)
     return (
-        <div 
-          style={{
-            maxWidth: rhythm(8),
-            padding: rhythm(1),
-            margin: rhythm(1/2),
-            border: `1px solid ${colors.payneGrey}`,
-          }}
+        <Link
+            style={{
+              maxWidth: rhythm(8),
+              padding: rhythm(1),
+              margin: rhythm(1/2),
+              border: `1px solid ${colors.payneGrey}`,
+            }}
+            to={prefixLink(this.props.path)}
         >
         <div
           style={{
@@ -31,7 +36,7 @@ class BlogThumbnail extends React.Component {
           {this.props.previewText}
         </div>
 
-      </div>
+      </Link>
     )
   }
 }

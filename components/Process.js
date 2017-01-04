@@ -7,6 +7,7 @@ import { colors } from 'utils/colors'
 const FaMapO = require('react-icons/lib/fa/map-o')
 const FaObjectGroup = require('react-icons/lib/fa/object-group')
 const FaWrench = require('react-icons/lib/fa/wrench')
+import { css, media, presets, merge } from 'glamor'
 
 
 const processPoints = [
@@ -40,6 +41,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
         background: colors.snow,
         borderBottom: `5px solid ${colors.sunny}`,
         padding: rhythm(1/2),
+        marginBottom: rhythm(1),
       }}
     >
       <div
@@ -96,11 +98,17 @@ class Process extends React.Component {
       >
         <SiteMargin>
           <div
-            style={{
-               display: 'flex',
-               flexDirection: 'row',
-               justifyContent: 'space-between',
-            }}
+            {...merge(
+                {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-around',
+                },
+                media(presets.tablet, {
+                 flexDirection: 'row',
+                }),
+              )
+            }
           >
             {processElements}
           </div>

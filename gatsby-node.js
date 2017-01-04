@@ -12,13 +12,16 @@ exports.rewritePath = (parsedFilePath, metadata) => {
 exports.createPages = ({ graphql }) => (
   new Promise((resolve, reject) => {
     const pages = []
-    const productDetail = path.resolve('./page-templates/product-detail.js')
+    const blogDetail = path.resolve('./page-templates/blog-detail.js')
     graphql(`
       {
         allMarkdown(first: 1000) {
           edges {
             node {
               path
+              frontmatter {
+                author
+              }
             }
           }
         }
@@ -35,7 +38,8 @@ exports.createPages = ({ graphql }) => (
         if (edge.node.path !== '/404/') {
           pages.push({
             path: edge.node.path,
-            component: productDetail,
+            author: edge.node.frontmatter.author,
+            component: blogDetail,
           })
         }
       })

@@ -4,15 +4,10 @@ import get from 'lodash/get'
 import DocumentTitle from 'react-document-title'
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm } from 'utils/typography'
-import include from 'underscore.string/include'
 import Separator from 'components/Separator'
-import Focus from 'components/Focus'
-import Team from 'components/Team'
-import Process from 'components/Process'
 import InquiryForm from 'components/InquiryForm'
 import BlogThumbnailContainer from 'components/BlogThumbnailContainer'
 import Header from 'components/Header'
-import '../css/zenburn.css'
 
 class BlogIndex extends React.Component {
   render () {
@@ -22,14 +17,8 @@ class BlogIndex extends React.Component {
       <DocumentTitle title={metadata.title}>
         <div>
           <Header />
-          <Separator text="Process" />
-          <Process />
-          <Separator text="Focus" />
-          <Focus />
           <Separator text="Blog" />
           <BlogThumbnailContainer blogEntries={blogEntries} />
-          <Separator text="Team" />
-          <Team />
           <InquiryForm />
         </div>
       </DocumentTitle>

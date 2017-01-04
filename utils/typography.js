@@ -1,5 +1,4 @@
 import Typography, {scale, rhythm} from 'typography'
-import Wordpress2016 from 'typography-theme-wordpress-2016'
 
 const typography = new Typography({
   baseFontSize: '18px',
@@ -26,7 +25,7 @@ const typography = new Typography({
   ],
   scaleRatio: 2.5,
   headerFontFamily: ['Poiret One', 'sans-serif'],
-  bodyFontFamily: ['Poiret One', 'sans-serif'],
+  bodyFontFamily: ['sans-serif'],
   headerColor: 'hsla(0,0%,0%,0.85)',
   bodyColor: 'hsla(0,0%,0%,0.7)',
   headerWeight: '200',
@@ -44,7 +43,8 @@ const typography = new Typography({
       },
       'a:hover': {
         color: '#2a6496',
-        textDecoration: 'underline',
+        textDecoration: 'none',
+        cursor: 'pointer',
       },
     }
     return styles

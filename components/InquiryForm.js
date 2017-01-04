@@ -4,7 +4,7 @@ import { prefixLink } from 'gatsby-helpers'
 import { colors } from 'utils/colors'
 import axios from 'axios'
 import qs from 'qs'
-
+import { css, media, presets, merge } from 'glamor'
 
 const FaArrowCircleORight = require('react-icons/lib/fa/arrow-circle-o-right')
 
@@ -55,15 +55,21 @@ class InquiryForm extends React.Component {
         >
            <input
               type="email"
-              style={{
-                background: colors.honeydew,
-                fontSize: rhythm(1),
-                border: 'none',
-                outline: 'none',
-                fontFamily: 'inherit',
-                padding: `${rhythm(1/2)} ${rhythm(1)}`,
-                paddingRight: rhythm(5/2)
-              }}
+              {...merge(
+                {
+                   background: colors.honeydew,
+                  maxWidth: '90vw',
+                  fontSize: rhythm(1/2),
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  padding: `${rhythm(1/2)} ${rhythm(1)}`,
+                  paddingRight: rhythm(5/2)
+                },
+                media(presets.tablet, {
+                 fontSize: rhythm(1),
+                }),
+              )}
               placeholder="YourEmail@here.com"
               value={this.state.email}
               onChange={(e) => this.setValue('email', e.target.value)}

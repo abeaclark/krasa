@@ -3,6 +3,7 @@ import { rhythm } from 'utils/typography'
 import { prefixLink } from 'gatsby-helpers'
 import SiteMargin from 'components/SiteMargin'
 import { colors } from 'utils/colors'
+import { css, media, presets, merge } from 'glamor'
 
 
 const foci = [
@@ -24,31 +25,49 @@ const lineItem = ({ headlineText, supportText, key }) =>
   (
      <div
       key={key}
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        background: colors.snow,
-        minHeight: rhythm(6),
-        alignItems: 'center',
-        padding: `${rhythm(1)} ${rhythm(2)}`, 
-        borderBottom: key === foci.length - 1 ? 0 : `1px solid ${colors.honeydew}`
-      }}
+      {...merge(
+          {
+            display: 'flex',
+            flexDirection: 'column',
+            background: colors.snow,
+            minHeight: rhythm(6),
+            alignItems: 'center',
+            padding: `${rhythm(1)} ${rhythm(2)}`, 
+            borderBottom: key === foci.length - 1 ? 0 : `1px solid ${colors.honeydew}`
+          },
+          media(presets.tablet, {
+           flexDirection: 'row',
+          }),
+      )}
     >
       <div
-        style={{
-          minWidth: rhythm(5),
-          fontSize: rhythm(3/2),
-          lineHeight: rhythm(3/2),
-          marginRight: rhythm(1),
-        }}
+        {...merge(
+          {
+            fontSize: rhythm(3/2),
+            lineHeight: rhythm(3/2),
+            marginBottom: rhythm(1),
+            textAlign: 'center',
+            },
+          media(presets.tablet, {
+            marginRight: rhythm(1),
+            marginRight: 0,
+          }),
+        )}
       >
         {headlineText}
       </div>
       <div
-        style={{
-          borderLeft: `1px solid ${colors.sunny}`,
-          padding: `${rhythm(2)} ${rhythm(1)}`, 
-        }}
+        {...merge(
+          {
+            padding: `${rhythm(1)} 0`, 
+            textAlign: 'center',
+            borderTop: `1px solid ${colors.sunny}`,
+            },
+          media(presets.tablet, {
+            borderLeft: `1px solid ${colors.sunny}`,
+            padding: `${rhythm(2)} ${rhythm(1)}`, 
+          }),
+        )}
       >
         {supportText}
       </div>

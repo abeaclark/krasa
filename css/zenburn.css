@@ -5,14 +5,14 @@ based on dark.css by Ivan Sagalaev
 
 */
 
-.markdown pre {
+pre {
   display: block;
   background: #3F3F3F;
   color: #DCDCDC;
   overflow-y: hidden;
 }
 
-.markdown pre code {
+pre code {
   background: none;
   border: none;
   border-radius: 3px;

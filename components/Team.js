@@ -5,6 +5,7 @@ import SiteMargin from 'components/SiteMargin'
 import { colors } from 'utils/colors'
 import Abe from '../media/Abe_Clark_375x300.jpeg'
 import Lindsay from '../media/Lindsay_Clark_375x300.jpeg'
+import { css, media, presets, merge } from 'glamor'
 
 const team = [
   {
@@ -27,7 +28,6 @@ const lineItem = ({ name, title, description, photo, }) =>
       key={name}
       style={{
         flexBasis: '49.5%',
-        minWidth: '350px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -35,6 +35,7 @@ const lineItem = ({ name, title, description, photo, }) =>
         borderTopRightRadius: '5%',
         borderTopLeftRadius: '5%',
         borderBottom: `5px solid ${colors.sunny}`,
+        marginBottom: rhythm(1/2),
       }}
     >
       <img
@@ -92,11 +93,17 @@ class Team extends React.Component {
       >
         <SiteMargin>
           <div
-            style={{
-               display: 'flex',
-               flexDirection: 'row',
-               justifyContent: 'space-between',
-            }}
+            {...merge(
+                {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                },
+                media(presets.tablet, {
+                 flexDirection: 'row',
+                }),
+              )
+            }
           >
             {teamElements}
           </div>
