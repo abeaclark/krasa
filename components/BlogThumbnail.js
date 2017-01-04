@@ -3,6 +3,7 @@ import { rhythm } from 'utils/typography'
 import { colors } from 'utils/colors'
 import { prefixLink } from 'gatsby-helpers'
 import { Link } from 'react-router'
+import { css } from 'glamor'
 
 
 class BlogThumbnail extends React.Component {
@@ -10,7 +11,7 @@ class BlogThumbnail extends React.Component {
     console.log(this.props.path)
     return (
         <Link
-            style={{
+            css={{
               maxWidth: rhythm(8),
               padding: rhythm(1),
               margin: rhythm(1/2),
@@ -19,7 +20,7 @@ class BlogThumbnail extends React.Component {
             to={prefixLink(this.props.path)}
         >
         <div
-          style={{
+          css={{
             fontSize: rhythm(1),
             color: colors.honeydew,
           }}
@@ -27,7 +28,7 @@ class BlogThumbnail extends React.Component {
           {this.props.title}
         </div>
         <div
-          style={{
+          css={{
             fontSize: rhythm(1/2),
             color: colors.darkness,
             marginTop: rhythm(1/4),

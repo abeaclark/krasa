@@ -25,7 +25,7 @@ const lineItem = ({ headlineText, supportText, key }) =>
   (
      <div
       key={key}
-      {...merge(
+      css={[
           {
             display: 'flex',
             flexDirection: 'column',
@@ -36,38 +36,41 @@ const lineItem = ({ headlineText, supportText, key }) =>
             borderBottom: key === foci.length - 1 ? 0 : `1px solid ${colors.honeydew}`
           },
           media(presets.tablet, {
-           flexDirection: 'row',
+            flexDirection: 'row',
           }),
-      )}
+      ]}
     >
       <div
-        {...merge(
+        css={[
           {
             fontSize: rhythm(3/2),
             lineHeight: rhythm(3/2),
             marginBottom: rhythm(1),
             textAlign: 'center',
+            minWidth: rhythm(5),
             },
           media(presets.tablet, {
             marginRight: rhythm(1),
-            marginRight: 0,
+            textAlign: 'left',
           }),
-        )}
+        ]}
       >
         {headlineText}
       </div>
       <div
-        {...merge(
+        css={[
           {
             padding: `${rhythm(1)} 0`, 
             textAlign: 'center',
             borderTop: `1px solid ${colors.sunny}`,
-            },
+          },
           media(presets.tablet, {
             borderLeft: `1px solid ${colors.sunny}`,
+            borderTop: 0,
             padding: `${rhythm(2)} ${rhythm(1)}`, 
+            textAlign: 'left',
           }),
-        )}
+        ]}
       >
         {supportText}
       </div>
@@ -86,14 +89,14 @@ class Focus extends React.Component {
     )
     return (
       <div
-        style={{
+        css={{
           background: colors.darkSea,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >
         <SiteMargin>
           <div
-            style={{
+            css={{
                display: 'flex',
                flexDirection: 'column',
             }}

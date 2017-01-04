@@ -2,11 +2,12 @@ import React from 'react'
 import { rhythm } from 'utils/typography'
 import { prefixLink } from 'gatsby-helpers'
 import { colors } from 'utils/colors'
+import { css } from 'glamor'
 
 const Separator = ({ text }) =>
     (
       <div
-        style={{
+        css={{
           height: rhythm(8),
           display: 'flex',
           justifyContent: 'center',
@@ -15,7 +16,7 @@ const Separator = ({ text }) =>
         }}
       >
         <div
-          style={{
+          css={{
             fontSize: rhythm(2),
             fontWeight: 'bold',
             color: colors.darkSea,

@@ -5,7 +5,7 @@ import { colors } from 'utils/colors'
 // import logo from '../media/logo.png'
 import BlogThumbnail from 'components/BlogThumbnail'
 import SiteMargin from 'components/SiteMargin'
-import { css, media, presets, merge } from 'glamor'
+import { css } from 'glamor'
 
 class BlogThumbnailContainer extends React.Component {
   render () {
@@ -26,21 +26,19 @@ class BlogThumbnailContainer extends React.Component {
     })
     return (
       <div
-        style={{
+        css={{
           background: colors.darkSea,
           padding: `${rhythm(1)} 0`,
         }}
       >
         <SiteMargin>
            <div
-                {...merge(
-                  {
-                     display: 'flex',
-                     flexDirection: 'row',
-                     justifyContent: 'space-around',
-                     flexWrap: 'wrap',
-                  },
-                )}
+              css={{
+                   display: 'flex',
+                   flexDirection: 'row',
+                   justifyContent: 'space-around',
+                   flexWrap: 'wrap',
+                }}
               >
               {entryElements}
             </div>

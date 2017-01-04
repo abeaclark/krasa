@@ -5,7 +5,7 @@ import SiteMargin from 'components/SiteMargin'
 import { colors } from 'utils/colors'
 import Abe from '../media/Abe_Clark_375x300.jpeg'
 import Lindsay from '../media/Lindsay_Clark_375x300.jpeg'
-import { css, media, presets, merge } from 'glamor'
+import { css, media, presets } from 'glamor'
 
 const team = [
   {
@@ -26,7 +26,7 @@ const lineItem = ({ name, title, description, photo, }) =>
   (
      <div
       key={name}
-      style={{
+      css={{
         flexBasis: '49.5%',
         display: 'flex',
         flexDirection: 'column',
@@ -40,14 +40,14 @@ const lineItem = ({ name, title, description, photo, }) =>
     >
       <img
         src={photo}
-        style={{
+        css={{
           width: '100%',
           borderTopRightRadius: '5%',
           borderTopLeftRadius: '5%',
         }}
       />
       <div
-        style={{
+        css={{
           fontSize: rhythm(3/2),
           fontWeight: 'bold',
           lineHeight: rhythm(3/2),
@@ -58,7 +58,7 @@ const lineItem = ({ name, title, description, photo, }) =>
         {name}
       </div>
       <div
-        style={{
+        css={{
           marginTop: rhythm(1/2),
           fontWeight: 'bold',
         }}
@@ -66,7 +66,7 @@ const lineItem = ({ name, title, description, photo, }) =>
         {title}
       </div>
       <div
-        style={{
+        css={{
           textAlign: 'center',
           padding: rhythm(1),
         }}
@@ -86,14 +86,14 @@ class Team extends React.Component {
     )
     return (
       <div
-        style={{
+        css={{
           background: colors.payneGrey,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >
         <SiteMargin>
           <div
-            {...merge(
+            css={[
                 {
                   display: 'flex',
                   flexDirection: 'column',
@@ -102,8 +102,7 @@ class Team extends React.Component {
                 media(presets.tablet, {
                  flexDirection: 'row',
                 }),
-              )
-            }
+            ]}
           >
             {teamElements}
           </div>

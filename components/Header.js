@@ -5,13 +5,14 @@ import Headroom from 'react-headroom'
 import SiteMargin from 'components/SiteMargin'
 import { colors } from 'utils/colors'
 import { Link } from 'react-router'
+import { css } from 'glamor'
 
 class Header extends React.Component {
   render () {
     return (
       <Headroom>
         <div
-          style={{
+          css={{
             height: rhythm(2),
             lineHeight: rhythm(2),
             background: colors.sunny,
@@ -19,7 +20,7 @@ class Header extends React.Component {
         >
           <SiteMargin>
             <div
-              style={{
+              css={{
                 padding: `0 ${rhythm(1/2)}`,
               }}
             >
@@ -29,7 +30,7 @@ class Header extends React.Component {
                 KRASA
               </Link>
               <Link
-                style={{
+                css={{
                   float: 'right',
                   marginLeft: rhythm(1/2),
                 }}
@@ -38,7 +39,7 @@ class Header extends React.Component {
                 BLOG
               </Link>
               <Link
-                style={{
+                css={{
                   float: 'right',
                 }}
                 to={prefixLink('/contact/')}

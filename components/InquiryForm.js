@@ -4,7 +4,7 @@ import { prefixLink } from 'gatsby-helpers'
 import { colors } from 'utils/colors'
 import axios from 'axios'
 import qs from 'qs'
-import { css, media, presets, merge } from 'glamor'
+import { css, media, presets } from 'glamor'
 
 const FaArrowCircleORight = require('react-icons/lib/fa/arrow-circle-o-right')
 
@@ -43,19 +43,19 @@ class InquiryForm extends React.Component {
     const steps = [
       (
        <form
-        style={{ margin: 0 }}
+        css={{ margin: 0 }}
        >
-        <h1 style={{ textAlign: 'center' }}>
+        <h1 css={{ textAlign: 'center' }}>
           Let's get in touch.
         </h1>
         <div
-          style={{
+          css={{
             position: 'relative',
           }}
         >
            <input
               type="email"
-              {...merge(
+              css={[
                 {
                    background: colors.honeydew,
                   maxWidth: '90vw',
@@ -69,13 +69,13 @@ class InquiryForm extends React.Component {
                 media(presets.tablet, {
                  fontSize: rhythm(1),
                 }),
-              )}
+              ]}
               placeholder="YourEmail@here.com"
               value={this.state.email}
               onChange={(e) => this.setValue('email', e.target.value)}
             />
             <button
-              style={{
+              css={{
                 background: 'none',
                 border: 'none',
                 fontSize: rhythm(3/2),
@@ -93,7 +93,7 @@ class InquiryForm extends React.Component {
             {
               this.state.validationMessage ?
               <div
-              style={{
+              css={{
                 fontSize: rhythm(1/2),
                 textAlign: 'center',
                 height: rhythm(1)
@@ -101,14 +101,14 @@ class InquiryForm extends React.Component {
               >
                 {this.state.validationMessage}
               </div> :
-              <div style={{ height: rhythm(1) }}></div>
+              <div css={{ height: rhythm(1) }}></div>
             }
           </div>
         </form>
       ),
       (
        <div
-          style={{
+          css={{
             fontSize: rhythm(1),
           }}
         >
@@ -119,7 +119,7 @@ class InquiryForm extends React.Component {
     const currentStep = steps[this.state.step]
     return (
       <div
-        style={{
+        css={{
           height: rhythm(8),
           display: 'flex',
           justifyContent: 'center',
@@ -128,7 +128,7 @@ class InquiryForm extends React.Component {
         }}
       >
         <div
-          style={{
+          css={{
             fontSize: rhythm(2),
             fontWeight: 'bold',
             color: colors.darkSea,

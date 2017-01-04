@@ -7,7 +7,7 @@ import { colors } from 'utils/colors'
 const FaMapO = require('react-icons/lib/fa/map-o')
 const FaObjectGroup = require('react-icons/lib/fa/object-group')
 const FaWrench = require('react-icons/lib/fa/wrench')
-import { css, media, presets, merge } from 'glamor'
+import { css, media, presets } from 'glamor'
 
 
 const processPoints = [
@@ -32,7 +32,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
   (
      <div
       key={key}
-      style={{
+      css={{
         flexBasis: '33%',
         minWidth: '250px',
         display: 'flex',
@@ -45,7 +45,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
       }}
     >
       <div
-        style={{
+        css={{
           fontSize: rhythm(2),
           textAlign: 'center',
           color: colors.darkSea,
@@ -59,7 +59,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
         {icon}
       </div>
       <div
-        style={{
+        css={{
           fontSize: rhythm(3/2),
           fontWeight: 'bold',
           lineHeight: rhythm(3/2),
@@ -70,7 +70,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
         {headlineText}
       </div>
       <div
-        style={{
+        css={{
           textAlign: 'center',
           padding: rhythm(1),
         }}
@@ -91,14 +91,14 @@ class Process extends React.Component {
     )
     return (
       <div
-        style={{
+        css={{
           background: colors.payneGrey,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >
         <SiteMargin>
           <div
-            {...merge(
+            css={[
                 {
                   display: 'flex',
                   flexDirection: 'column',
@@ -107,8 +107,7 @@ class Process extends React.Component {
                 media(presets.tablet, {
                  flexDirection: 'row',
                 }),
-              )
-            }
+            ]}
           >
             {processElements}
           </div>
