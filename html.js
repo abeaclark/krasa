@@ -25,6 +25,7 @@ module.exports = React.createClass({
             content="width=device-width, initial-scale=1.0"
           />
           <title>{title}</title>
+          {this.props.headComponents}
           <TypographyStyle typography={typography} />
           <GoogleFont typography={typography} />
           <HTMLStyles />
