@@ -2,7 +2,7 @@
 author: "abe"
 path: "/index.html"
 photoURL: "https://media.licdn.com/mpr/mpr/shrinknp_400_400/p/6/005/096/07c/1427c21.jpg"
-title: "3 Reasons Why Speed is Priority #1"
+title: "Three Reasons Why Speed is Top Priority"
 previewText: "Page speed should be prioritized above all else, here is why"
 ---
 Page Speed should be prioritized above all else, here is why:
