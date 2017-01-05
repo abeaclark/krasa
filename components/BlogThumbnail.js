@@ -30,8 +30,9 @@ class BlogThumbnail extends React.Component {
         <div
           css={{
             fontSize: rhythm(1/2),
+            lineHeight: rhythm(3/4),
             color: colors.darkness,
-            marginTop: rhythm(1/4),
+            marginTop: rhythm(1/2),
           }}
         >
           {this.props.previewText}

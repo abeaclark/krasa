@@ -2,8 +2,8 @@
 author: "abe"
 path: "/index.html"
 photoURL: "https://media.licdn.com/mpr/mpr/shrinknp_400_400/p/6/005/096/07c/1427c21.jpg"
-title: "Krasa Development: Web, Mobile, Design"
-previewText: "This is the preview text"
+title: "Blank"
+previewText: "Blank"
 ---
 # Introducing Krasa
 
