@@ -1,4 +1,5 @@
 import Typography, {scale, rhythm} from 'typography'
+import { colors } from './colors'
 
 const typography = new Typography({
   baseFontSize: '18px',
@@ -38,11 +39,11 @@ const typography = new Typography({
       },
       a: {
         fontWeight: 400,
-        color: '#419eda',
+        color: colors.darkSea,
         textDecoration: 'none',
       },
       'a:hover': {
-        color: '#2a6496',
+        color: colors.PayneGrey,
         textDecoration: 'none',
         cursor: 'pointer',
       },

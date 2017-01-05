@@ -3,6 +3,7 @@ import { rhythm } from 'utils/typography'
 import { prefixLink } from 'gatsby-helpers'
 import Headroom from 'react-headroom'
 import SiteMargin from 'components/SiteMargin'
+import ContactModal from 'components/ContactModal'
 import { colors } from 'utils/colors'
 import { Link } from 'react-router'
 import { css } from 'glamor'
@@ -38,14 +39,11 @@ class Header extends React.Component {
               >
                 BLOG
               </Link>
-              <Link
-                css={{
-                  float: 'right',
-                }}
-                to={prefixLink('/contact/')}
+              <span
+                css={{ float: 'right' }}
               >
-                CONTACT
-              </Link>
+                <ContactModal />
+              </span>
             </div>
           </SiteMargin>
         </div>
