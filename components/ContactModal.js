@@ -26,8 +26,8 @@ const backdropStyle = {
 
 const dialogStyle = function() {
   return {
-    width: '100%',
-    height: '100%',
+    width: '100vw',
+    height: '100vh',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -190,8 +190,8 @@ class ContactModal extends React.Component {
             >
               <button 
                 style={{
-                  width: rhythm(2),
-                  height: rhythm(2),
+                  width: '60px',
+                  height: '60px',
                   textAlign: 'center',
                   position: 'absolute',
                   left: '50%',
@@ -202,8 +202,8 @@ class ContactModal extends React.Component {
                   border: 'none',
                   outline: 'none',
                   borderRadius: '100%',
-                  fontSize: rhythm(3/2),
-                  marginLeft: rhythm(-1),
+                  fontSize: '50px',
+                  marginLeft: '-50px',
                 }}
                 onClick={this.close}
               >

@@ -44,7 +44,3 @@ We also offer our services à la carte if that better matches your goals. Here a
 * Static sites
 * Dynamic web apps with social login
 * Mobile apps (iOS & Android)
-
-## How do we get in contact?
-
-TODO: Imbed contact widget here
