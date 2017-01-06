@@ -5,6 +5,7 @@ import { GoogleFont, TypographyStyle } from 'react-typography'
 import typography from './utils/typography'
 import HTMLScripts from 'html-scripts'
 import HTMLStyles from 'html-styles'
+let css
 
 module.exports = React.createClass({
   displayName: 'HTML',
@@ -25,6 +26,7 @@ module.exports = React.createClass({
             content="width=device-width, initial-scale=1.0"
           />
           <title>{title}</title>
+          {css}
           <HTMLStyles />
           {this.props.headComponents}
           <TypographyStyle typography={typography} />
