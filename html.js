@@ -17,11 +17,6 @@ module.exports = React.createClass({
 
     return (
       <html lang="en">
-        <meta name="og:description" content="Krasa is a San Francisco based digital Design and Development company. We specialize in designing and building fast, reliable, and sexy mobile apps, websites, and other digital experiences.">
-        <meta name="og:type" content="website">
-        <meta name="og:image" content="https://www.krasadev.com/static/Abe_Clark_375x300.9cdeecbe.jpeg">
-        <meta name="og:url" content="www.krasadev.com">
-        <meta name="og:og:app_id" content="1871871486381228">
         <head>
           <meta charSet="utf-8" />
           <meta charSet="utf-8" />
@@ -30,6 +25,11 @@ module.exports = React.createClass({
             name="viewport"
             content="width=device-width, initial-scale=1.0"
           />
+          <meta name="og:description" content="Krasa is a San Francisco based digital Design and Development company. We specialize in designing and building fast, reliable, and sexy mobile apps, websites, and other digital experiences." />
+          <meta name="og:type" content="website"/>
+          <meta name="og:image" content="https://www.krasadev.com/static/Abe_Clark_375x300.9cdeecbe.jpeg"/>
+          <meta name="og:url" content="www.krasadev.com"/>
+          <meta name="og:og:app_id" content="1871871486381228"/>
           <title>{title}</title>
           <HTMLStyles />
           {this.props.headComponents}
