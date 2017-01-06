@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router'
 import get from 'lodash/get'
-import DocumentTitle from 'react-document-title'
+import Helmet from "react-helmet"
+
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm } from 'utils/typography'
 import Separator from 'components/Separator'
@@ -14,14 +15,22 @@ class BlogIndex extends React.Component {
     const metadata = get(this.props, 'data.site.siteMetadata')
     const blogEntries = get(this, 'props.data.allMarkdown.edges')
     return (
-      <DocumentTitle title={metadata.title}>
-        <div>
-          <Header />
-          <Separator text="Blog" />
-          <BlogThumbnailContainer blogEntries={blogEntries} />
-          <InquiryForm />
-        </div>
-      </DocumentTitle>
+      <div>
+        <Helmet
+          title={`${metadata.title} | Blog -- Web, Mobile & App Design + Development`}
+          meta={[
+            { name: 'og:type', content: 'website' },
+            { name: 'og:image', content: metadata.photoURL },
+            { name: 'og:url', content: 'krasadev.com' },
+            { name: 'og:description', content: metadata.description },
+            { name: 'og:app_id', content: metadata.fbAppID },
+          ]}
+        />
+        <Header />
+        <Separator text="Blog" />
+        <BlogThumbnailContainer blogEntries={blogEntries} />
+        <InquiryForm />
+      </div>
     )
   }
 }
@@ -40,6 +49,8 @@ export const pageQuery = `
       title
       homeCity
       author
+      description
+      fbAppID
     }
   }
   allMarkdown(first: 2000) {
@@ -56,4 +67,3 @@ export const pageQuery = `
   }
 }
 `
-// <Products products={products} />

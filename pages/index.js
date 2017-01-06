@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router'
 import get from 'lodash/get'
-import DocumentTitle from 'react-document-title'
+import Helmet from "react-helmet"
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm } from 'utils/typography'
 import include from 'underscore.string/include'
@@ -19,20 +19,28 @@ class BlogIndex extends React.Component {
     const metadata = get(this.props, 'data.site.siteMetadata')
     const blogEntries = get(this, 'props.data.allMarkdown.edges')
     return (
-      <DocumentTitle title={metadata.title}>
-        <div>
-          <Header />
-          <Separator text="Process" />
-          <Process />
-          <Separator text="Focus" />
-          <Focus />
-          <Separator text="Blog" />
-          <BlogThumbnailContainer blogEntries={blogEntries} />
-          <Separator text="Team" />
-          <Team />
-          <InquiryForm />
-        </div>
-      </DocumentTitle>
+      <div>
+        <Helmet
+          title={`${metadata.title} | Web, Mobile & App Design + Development`}
+          meta={[
+            { name: 'og:type', content: 'website' },
+            { name: 'og:image', content: metadata.photoURL },
+            { name: 'og:url', content: 'krasadev.com' },
+            { name: 'og:description', content: metadata.description },
+            { name: 'og:app_id', content: metadata.fbAppID },
+          ]}
+        />
+        <Header />
+        <Separator text="Process" />
+        <Process />
+        <Separator text="Focus" />
+        <Focus />
+        <Separator text="Blog" />
+        <BlogThumbnailContainer blogEntries={blogEntries} />
+        <Separator text="Team" />
+        <Team />
+        <InquiryForm />
+      </div>
     )
   }
 }
@@ -51,6 +59,9 @@ export const pageQuery = `
       title
       homeCity
       author
+      photoURL
+      description
+      fbAppID
     }
   }
   allMarkdown(first: 2000) {

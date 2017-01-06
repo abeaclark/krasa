@@ -21,6 +21,9 @@ class Detail extends React.Component {
           meta={[
             { name: 'og:type', content: 'article' },
             { name: 'og:image', content: (blogPost.photoURL || metadata.photoURL || '') },
+            { name: 'og:url', content: 'krasadev.com' },
+            { name: 'og:description', content: metadata.description },
+            { name: 'og:app_id', content: metadata.fbAppID },
           ]}
         />
         <Header />
@@ -81,6 +84,8 @@ query Article($path: String!) {
     siteMetadata {
       title
       photoURL
+      fbAppID
+      description
     }
   }
   markdown(path: $path) {
