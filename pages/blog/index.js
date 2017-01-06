@@ -1,7 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router'
 import get from 'lodash/get'
-import Helmet from "react-helmet"
 
 import { prefixLink } from 'gatsby-helpers'
 import { rhythm } from 'utils/typography'
@@ -16,16 +15,6 @@ class BlogIndex extends React.Component {
     const blogEntries = get(this, 'props.data.allMarkdown.edges')
     return (
       <div>
-        <Helmet
-          title={`${metadata.title} | Blog -- Web, Mobile & App Design + Development`}
-          meta={[
-            { name: 'og:type', content: 'website' },
-            { name: 'og:image', content: metadata.photoURL },
-            { name: 'og:url', content: 'krasadev.com' },
-            { name: 'og:description', content: metadata.description },
-            { name: 'og:app_id', content: metadata.fbAppID },
-          ]}
-        />
         <Header />
         <Separator text="Blog" />
         <BlogThumbnailContainer blogEntries={blogEntries} />
