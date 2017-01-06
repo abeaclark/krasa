@@ -26,7 +26,7 @@ Krāsa means 'color' in Latvian.
 
 Abe lived in Latvia for two years while serving an [LDS mission](http://www.mormonnewsroom.org/topic/missionary-program) and fell in love with the people and culture.
 
-One of Lindsay's favorite aspects of design is finding the right color palet to attract and engage users while keeping it asthetically pleasing.
+One of Lindsay's favorite aspects of design is finding the right color palette to attract and engage users while keeping it asthetically pleasing.
 
 The combination makes for a great company name, don't you think?
 

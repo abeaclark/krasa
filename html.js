@@ -25,10 +25,10 @@ module.exports = React.createClass({
             content="width=device-width, initial-scale=1.0"
           />
           <title>{title}</title>
+          <HTMLStyles />
           {this.props.headComponents}
           <TypographyStyle typography={typography} />
           <GoogleFont typography={typography} />
-          <HTMLStyles />
         </head>
         <body className="landing-page">
           <div id="react-mount" dangerouslySetInnerHTML={{ __html: body }} />
