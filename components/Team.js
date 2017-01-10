@@ -3,8 +3,6 @@ import { rhythm } from 'utils/typography'
 import { prefixLink } from 'gatsby-helpers'
 import SiteMargin from 'components/SiteMargin'
 import { colors } from 'utils/colors'
-import Abe from '../media/Abe_Clark_375x300.jpeg'
-import Lindsay from '../media/Lindsay_Clark_375x300.jpeg'
 import { css, media, presets } from 'glamor'
 
 const team = [
@@ -12,13 +10,13 @@ const team = [
     name: "Lindsay",
     title: "Lead Designer",
     description: "I make sure your product is intuitive and beautiful. I collaborate with you to arrive at a fresh, impressive user interface that delivers a top-notch user experience.",
-    photo: Lindsay,
+    photo: "http://res.cloudinary.com/krasa/image/upload/v1484009470/Lindsay_Clark_375x300_fjc2yg.jpg",
   },
   {
     name: "Abe",
     title: "Lead Developer",
     description: "I build your product using dependable, current web and app frameworks that ensure a fast and reliable experience. I deliver the data you crave and keep your customers' private information private.",
-    photo: Abe,
+    photo: "http://res.cloudinary.com/krasa/image/upload/v1484009469/Abe_Clark_375x300_r1gben.jpg",
   },
 ]
 

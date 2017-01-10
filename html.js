@@ -27,9 +27,9 @@ module.exports = React.createClass({
           />
           <meta name="og:description" content="Krasa is a San Francisco based digital Design and Development company. We specialize in designing and building fast, reliable, and sexy mobile apps, websites, and other digital experiences." />
           <meta name="og:type" content="website" />
-          <meta name="og:image" content="https://www.krasadev.com/static/Abe_Clark_375x300.9cdeecbe.jpeg" />
+          <meta name="og:image" content="http://res.cloudinary.com/krasa/image/upload/v1484009470/Lindsay_Clark_375x300_fjc2yg.jpg" />
           <meta name="og:url" content="www.krasadev.com" />
-          <meta name="og:app_id" content="1871871486381228" />
+          <meta name="fb:app_id" content="1871871486381228" />
           <meta name="og:title" content={title} />
           <title>{title}</title>
           <HTMLStyles />
