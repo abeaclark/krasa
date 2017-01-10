@@ -61,7 +61,7 @@ class EmailInput extends React.Component {
                 outline: 'none',
                 fontFamily: 'inherit',
                 padding: `${rhythm(1/2)} ${rhythm(1)}`,
-                paddingRight: rhythm(5/2),
+                paddingRight: '60px',
               },
               media(presets.tablet, {
                 fontSize: rhythm(1),
@@ -84,6 +84,8 @@ class EmailInput extends React.Component {
             onClick={(e) => {e.preventDefault(); this.submitForm()}}
           >
             <FaArrowCircleORight
+              size="30px"
+              style={{ cursor: 'pointer' }}
               color={colors.darkPurple}
             />
           </button>
@@ -94,6 +96,7 @@ class EmailInput extends React.Component {
                   fontSize: rhythm(1/2),
                   textAlign: 'center',
                   height: rhythm(1),
+                  color: colors.almond,
                 }}
               >
                 {this.state.validationMessage}
