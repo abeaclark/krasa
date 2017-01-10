@@ -1,6 +1,6 @@
 import React from 'react'
 import { colors } from 'utils/colors'
-import '../css/prism-coy.css'
+// import '../css/prism-coy.css'
 
 class Template extends React.Component {
   render () {

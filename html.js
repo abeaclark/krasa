@@ -1,5 +1,4 @@
 import React from 'react'
-import DocumentTitle from 'react-document-title'
 import { prefixLink } from 'gatsby-helpers'
 import { GoogleFont, TypographyStyle } from 'react-typography'
 import typography from './utils/typography'
@@ -11,10 +10,8 @@ module.exports = React.createClass({
   propTypes: {
     body: React.PropTypes.string,
   },
-  render () {
+  render() {
     const { body } = this.props
-    const title = DocumentTitle.rewind()
-
     return (
       <html lang="en">
         <head>
@@ -30,8 +27,8 @@ module.exports = React.createClass({
           <meta name="og:image" content="http://res.cloudinary.com/krasa/image/upload/v1484009470/Lindsay_Clark_375x300_fjc2yg.jpg" />
           <meta name="og:url" content="www.krasadev.com" />
           <meta name="fb:app_id" content="1871871486381228" />
-          <meta name="og:title" content={title} />
-          <title>{title}</title>
+          <meta name="og:title" content="Krasa | Mobile Web App Design & Development" />
+          <title>Krasa | Mobile Web App Design & Development</title>
           <HTMLStyles />
           {this.props.headComponents}
           <TypographyStyle typography={typography} />

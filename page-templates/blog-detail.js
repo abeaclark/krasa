@@ -6,7 +6,7 @@ import { rhythm, adjustFontSizeToMSValue } from 'utils/typography'
 import SiteMargin from 'components/SiteMargin'
 import { authors } from 'utils/authors'
 const FaLinkedin = require('react-icons/lib/fa/linkedin')
-import '../css/zenburn.css'
+// import '../css/zenburn.css'
 import Header from 'components/Header'
 
 class Detail extends React.Component {

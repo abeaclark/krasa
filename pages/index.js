@@ -12,7 +12,7 @@ import Process from 'components/Process'
 import InquiryForm from 'components/InquiryForm'
 import BlogThumbnailContainer from 'components/BlogThumbnailContainer'
 import Header from 'components/Header'
-import '../css/zenburn.css'
+// import '../css/zenburn.css'
 
 class BlogIndex extends React.Component {
   render () {

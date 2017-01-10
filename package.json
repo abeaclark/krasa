@@ -9,7 +9,7 @@
   "dependencies": {
     "axios": "^0.15.3",
     "gatsby": "^1.0.0-alpha10",
-    "glamor": "^2.20.12",
+    "glamor": "^2.20.20",
     "lodash": "^4.15.0",
     "moment": "^2.14.1",
     "qs": "^6.3.0",
