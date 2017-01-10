@@ -18,17 +18,16 @@ class InquiryForm extends React.Component {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: colors.almond,
+          background: colors.raisinBlack,
         }}
       >
         <div
           css={{
             fontSize: rhythm(2),
             fontWeight: 'bold',
-            color: colors.weldonBlue,
           }}
         >
-          <h1 css={{ textAlign: 'center' }}>
+          <h1 css={{ textAlign: 'center', color: colors.snow }}>
             Let's get in touch.
           </h1>
           <EmailInput />

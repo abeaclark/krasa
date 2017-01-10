@@ -29,25 +29,32 @@ class BlogThumbnailContainer extends React.Component {
         css={[
           {
             background: colors.raisinBlack,
-            padding: `${rhythm(1)} 0`,
+            padding: `${rhythm(2)} 0`,
           },
           media(presets.tablet, {
-            padding: `${rhythm(2)} 0`,
+            padding: `${rhythm(4)} 0`,
           }),
         ]}
       >
         <SiteMargin>
-           <div
-              css={{
-                   display: 'flex',
-                   flexDirection: 'row',
-                   justifyContent: 'space-around',
-                   flexWrap: 'wrap',
-                }}
-              >
-              {entryElements}
-            </div>
-        </SiteMargin> 
+          <div
+            css={[
+              {
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-around',
+                flexWrap: 'wrap',
+                border: `1px solid ${colors.weldonBlue}`,
+                padding: `${rhythm(1/2)} ${rhythm(1/4)}`,
+              },
+              media(presets.tablet, {
+                padding: `${rhythm(1)} ${rhythm(1/4)}`,
+              }),
+            ]}
+          >
+            {entryElements}
+          </div>
+        </SiteMargin>
       </div>
     )
   }

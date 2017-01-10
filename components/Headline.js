@@ -13,7 +13,7 @@ class Headline extends React.Component {
         css={{
           background: colors.darkPurple,
           padding: `${rhythm(2)} ${rhythm(1/2)}`,
-          minHeight: '98vh',
+          minHeight: '93vh',
         }}
       >
         <SiteMargin>

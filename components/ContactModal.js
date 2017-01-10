@@ -119,10 +119,11 @@ class ContactModal extends React.Component {
                   borderRadius: '100%',
                   fontSize: '50px',
                   marginLeft: '-50px',
+                  verticalAlign: 'middle',
                 }}
                 onClick={this.close}
               >
-                <FaClose />
+                <FaClose style={{ cursor: 'pointer' }}/>
               </button>
               <h1 style={{ textAlign: 'center' }}>
                 We would love to get in touch.

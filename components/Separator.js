@@ -16,6 +16,7 @@ const Separator = ({ text, angle=true }) =>
             background: colors.charcoalBlue,
             position: 'relative',
             zIndex: 1,
+            borderTop: `40px solid ${colors.almond}`,
           },
         ]}
       >
@@ -36,7 +37,7 @@ const Separator = ({ text, angle=true }) =>
             }}
           />
         }
-        <div
+        <h1
           css={{
             fontSize: rhythm(2),
             fontWeight: 'bold',
@@ -44,7 +45,7 @@ const Separator = ({ text, angle=true }) =>
           }}
         >
           {text}
-        </div>
+        </h1>
         {angle &&
           <div
             css={{
