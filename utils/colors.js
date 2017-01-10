@@ -1,8 +1,8 @@
 export const colors = {
-  snow: '#FFF',
-  darkness: '#000000',
-  payneGrey: '#5D737E',
-  sunny: '#FFF07C',
-  honeydew: '#F0F7EE',
-  darkSea: '#87BBA2',
+  snow: '#FBFBFB',
+  raisinBlack: '#201A23',
+  darkPurple: '#2E2532',
+  almond: '#EFE5CE',
+  charcoalBlue: '#313E50',
+  weldonBlue: '#7D98A1',
 }

@@ -4,6 +4,7 @@ import { GoogleFont, TypographyStyle } from 'react-typography'
 import typography from './utils/typography'
 import HTMLScripts from 'html-scripts'
 import HTMLStyles from 'html-styles'
+import Helmet from 'react-helmet'
 
 module.exports = React.createClass({
   displayName: 'HTML',
@@ -12,6 +13,7 @@ module.exports = React.createClass({
   },
   render() {
     const { body } = this.props
+    const head = Helmet.rewind()
     return (
       <html lang="en">
         <head>
@@ -22,13 +24,9 @@ module.exports = React.createClass({
             name="viewport"
             content="width=device-width, initial-scale=1.0"
           />
-          <meta name="og:description" content="Krasa is a San Francisco based digital Design and Development company. We specialize in designing and building fast, reliable, and sexy mobile apps, websites, and other digital experiences." />
-          <meta name="og:type" content="website" />
-          <meta name="og:image" content="http://res.cloudinary.com/krasa/image/upload/v1484009470/Lindsay_Clark_375x300_fjc2yg.jpg" />
-          <meta name="og:url" content="www.krasadev.com" />
-          <meta name="fb:app_id" content="1871871486381228" />
-          <meta name="og:title" content="Krasa | Mobile Web App Design & Development" />
-          <title>Krasa | Mobile Web App Design & Development</title>
+          {head.title.toComponent()}
+          {head.meta.toComponent()}
+          {head.link.toComponent()}
           <HTMLStyles />
           {this.props.headComponents}
           <TypographyStyle typography={typography} />

@@ -15,14 +15,15 @@ class BlogThumbnail extends React.Component {
               maxWidth: rhythm(8),
               padding: rhythm(1),
               margin: rhythm(1/2),
-              border: `1px solid ${colors.payneGrey}`,
+              border: `1px solid ${colors.darkPurple}`,
+              background: colors.snow,
             }}
             to={prefixLink(this.props.path)}
         >
         <div
           css={{
             fontSize: rhythm(1),
-            color: colors.honeydew,
+            color: colors.weldonBlue,
           }}
         >
           {this.props.title}
@@ -31,7 +32,7 @@ class BlogThumbnail extends React.Component {
           css={{
             fontSize: rhythm(1/2),
             lineHeight: rhythm(3/4),
-            color: colors.darkness,
+            color: colors.darkPurple,
             marginTop: rhythm(1/2),
           }}
         >

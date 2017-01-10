@@ -5,7 +5,7 @@ import { colors } from 'utils/colors'
 // import logo from '../media/logo.png'
 import BlogThumbnail from 'components/BlogThumbnail'
 import SiteMargin from 'components/SiteMargin'
-import { css } from 'glamor'
+import { css, media, presets } from 'glamor'
 
 class BlogThumbnailContainer extends React.Component {
   render () {
@@ -26,10 +26,15 @@ class BlogThumbnailContainer extends React.Component {
     })
     return (
       <div
-        css={{
-          background: colors.darkSea,
-          padding: `${rhythm(1)} 0`,
-        }}
+        css={[
+          {
+            background: colors.raisinBlack,
+            padding: `${rhythm(1)} 0`,
+          },
+          media(presets.tablet, {
+            padding: `${rhythm(2)} 0`,
+          }),
+        ]}
       >
         <SiteMargin>
            <div

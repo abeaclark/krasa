@@ -7,6 +7,7 @@ import ContactModal from 'components/ContactModal'
 import { colors } from 'utils/colors'
 import { Link } from 'react-router'
 import { css } from 'glamor'
+import KrasaCircleLogo from 'icons/KrasaCircleLogo'
 
 class Header extends React.Component {
   render () {
@@ -16,7 +17,7 @@ class Header extends React.Component {
           css={{
             height: rhythm(2),
             lineHeight: rhythm(2),
-            background: colors.sunny,
+            background: colors.raisinBlack,
           }}
         >
           <SiteMargin>
@@ -27,17 +28,22 @@ class Header extends React.Component {
             >
               <Link
                 to={prefixLink('/')}
+                css={{
+                  fontSize: rhythm(1),
+                  color: colors.snow,
+                }}
               >
-                KRASA
+                <KrasaCircleLogo color={colors.snow} /> {' '} krasa
               </Link>
               <Link
                 css={{
                   float: 'right',
                   marginLeft: rhythm(1/2),
+                  color: colors.snow,
                 }}
                 to={prefixLink('/blog/')}
               >
-                BLOG
+                blog
               </Link>
               <span
                 css={{ float: 'right' }}

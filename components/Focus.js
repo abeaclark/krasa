@@ -33,7 +33,7 @@ const lineItem = ({ headlineText, supportText, key }) =>
             minHeight: rhythm(6),
             alignItems: 'center',
             padding: `${rhythm(1)} ${rhythm(2)}`, 
-            borderBottom: key === foci.length - 1 ? 0 : `1px solid ${colors.honeydew}`
+            borderBottom: key === foci.length - 1 ? 0 : `1px solid ${colors.charcoalBlue}`
           },
           media(presets.tablet, {
             flexDirection: 'row',
@@ -62,10 +62,10 @@ const lineItem = ({ headlineText, supportText, key }) =>
           {
             padding: `${rhythm(1)} 0`, 
             textAlign: 'center',
-            borderTop: `1px solid ${colors.sunny}`,
+            borderTop: `1px solid ${colors.almond}`,
           },
           media(presets.tablet, {
-            borderLeft: `1px solid ${colors.sunny}`,
+            borderLeft: `1px solid ${colors.almond}`,
             borderTop: 0,
             padding: `${rhythm(2)} ${rhythm(1)}`, 
             textAlign: 'left',
@@ -90,7 +90,7 @@ class Focus extends React.Component {
     return (
       <div
         css={{
-          background: colors.darkSea,
+          background: colors.darkPurple,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >

@@ -23,7 +23,7 @@ class Detail extends React.Component {
             { name: 'og:image', content: (blogPost.photoURL || metadata.photoURL || '') },
             { name: 'og:url', content: 'krasadev.com' },
             { name: 'og:description', content: metadata.description },
-            { name: 'og:app_id', content: metadata.fbAppID },
+            { name: 'fb:app_id', content: metadata.fbAppID },
           ]}
         />
         <Header />

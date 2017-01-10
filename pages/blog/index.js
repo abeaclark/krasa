@@ -8,6 +8,7 @@ import Separator from 'components/Separator'
 import InquiryForm from 'components/InquiryForm'
 import BlogThumbnailContainer from 'components/BlogThumbnailContainer'
 import Header from 'components/Header'
+import Helmet from "react-helmet"
 
 class BlogIndex extends React.Component {
   render () {
@@ -15,8 +16,18 @@ class BlogIndex extends React.Component {
     const blogEntries = get(this, 'props.data.allMarkdown.edges')
     return (
       <div>
+        <Helmet
+          title={`Blog | ${metadata.title}`}
+          meta={[
+            { name: 'og:type', content: 'article' },
+            { name: 'og:image', content: (metadata.photoURL || '') },
+            { name: 'og:url', content: 'krasadev.com' },
+            { name: 'og:description', content: metadata.description },
+            { name: 'fb:app_id', content: metadata.fbAppID },
+          ]}
+        />
         <Header />
-        <Separator text="Blog" />
+        <Separator text="Blog" angle={false}/>
         <BlogThumbnailContainer blogEntries={blogEntries} />
         <InquiryForm />
       </div>

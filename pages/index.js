@@ -12,6 +12,8 @@ import Process from 'components/Process'
 import InquiryForm from 'components/InquiryForm'
 import BlogThumbnailContainer from 'components/BlogThumbnailContainer'
 import Header from 'components/Header'
+import Headline from 'components/Headline'
+
 // import '../css/zenburn.css'
 
 class BlogIndex extends React.Component {
@@ -31,6 +33,7 @@ class BlogIndex extends React.Component {
           ]}
         />
         <Header />
+        <Headline />
         <Separator text="Process" />
         <Process />
         <Separator text="Focus" />

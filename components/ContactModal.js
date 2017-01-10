@@ -10,6 +10,7 @@ import { css, media, presets } from 'glamor'
 import EmailInput from 'components/EmailInput'
 
 const FaClose = require('react-icons/lib/fa/close')
+const FaAngleRight = require('react-icons/lib/fa/angle-right')
 
 class ContactModal extends React.Component {
   constructor(props) {
@@ -48,29 +49,41 @@ class ContactModal extends React.Component {
       }
     }
 
+    const style = this.props.style || {}
+    const mobileStyle = this.props.mobileStyle || {}
+    const text = this.props.text || 'contact'
+
     return (
       <div>
         <input
           type="button"
-          css={{
-            background: 'none',
-            border: 'none',
-            display: 'inline',
-            color: colors.darkSea,
-            padding: 0,
-            ':active': {
-              outline: 'none',
+          css={[
+            {
+              background: 'none',
+              border: 'none',
+              display: 'inline',
+              color: colors.snow,
+              cursor: 'pointer',
+              padding: 0,
+              ':active': {
+                outline: 'none',
+              },
+              ':visited': {
+                outline: 'none',
+              },
+              ':focus': {
+                outline: 'none',
+              },
+              ...style,
             },
-            ':visited': {
-              outline: 'none',
-            },
-            ':focus': {
-              outline: 'none',
-            }
-          }}
+            media(presets.tablet, {
+              ...mobileStyle,
+            }),
+          ]}
           onClick={this.open}
-          value="CONTACT"
+          value={text}
         />
+        {this.props.icon && <FaAngleRight size={rhythm(1)} />}
         <Modal
           style={modalStyle}
           backdropStyle={backdropStyle}
@@ -99,8 +112,8 @@ class ContactModal extends React.Component {
                   left: '50%',
                   right: '50%',
                   top: rhythm(1),
-                  color: colors.darkSea,
-                  background: colors.honeydew,
+                  color: colors.weldonBlue,
+                  background: colors.charcoalBlue,
                   border: 'none',
                   outline: 'none',
                   borderRadius: '100%',

@@ -18,14 +18,14 @@ class InquiryForm extends React.Component {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: colors.sunny,
+          background: colors.almond,
         }}
       >
         <div
           css={{
             fontSize: rhythm(2),
             fontWeight: 'bold',
-            color: colors.darkSea,
+            color: colors.weldonBlue,
           }}
         >
           <h1 css={{ textAlign: 'center' }}>

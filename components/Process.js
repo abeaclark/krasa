@@ -39,7 +39,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
           flexDirection: 'column',
           alignItems: 'center',
           background: colors.snow,
-          borderBottom: `5px solid ${colors.sunny}`,
+          borderBottom: `5px solid ${colors.almond}`,
           padding: rhythm(1/2),
           marginBottom: rhythm(1),
         },
@@ -52,10 +52,10 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
         css={{
           fontSize: rhythm(2),
           textAlign: 'center',
-          color: colors.darkSea,
+          color: colors.weldonBlue,
           padding: rhythm(1/2),
           borderRadius: '100',
-          background: colors.honeydew,
+          background: colors.charcoalBlue,
           marginTop: rhythm(1),
           marginBottom: rhythm(1),
         }}
@@ -68,7 +68,7 @@ const lineItem = ({ headlineText, supportingText, icon, key }) =>
           fontWeight: 'bold',
           lineHeight: rhythm(3/2),
           paddingBottom: rhythm(1/2),
-          borderBottom: `1px solid ${colors.sunny}`,
+          borderBottom: `1px solid ${colors.almond}`,
         }}
       >
         {headlineText}
@@ -96,7 +96,7 @@ class Process extends React.Component {
     return (
       <div
         css={{
-          background: colors.payneGrey,
+          background: colors.raisinBlack,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >

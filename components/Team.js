@@ -32,7 +32,7 @@ const lineItem = ({ name, title, description, photo, }) =>
           background: colors.snow,
           borderTopRightRadius: '5%',
           borderTopLeftRadius: '5%',
-          borderBottom: `5px solid ${colors.sunny}`,
+          borderBottom: `5px solid ${colors.almond}`,
           marginBottom: rhythm(1/2),
         },
         media(presets.tablet, {
@@ -54,7 +54,7 @@ const lineItem = ({ name, title, description, photo, }) =>
           fontWeight: 'bold',
           lineHeight: rhythm(3/2),
           paddingBottom: rhythm(1/2),
-          borderBottom: `1px solid ${colors.sunny}`,
+          borderBottom: `1px solid ${colors.almond}`,
         }}
       >
         {name}
@@ -89,7 +89,7 @@ class Team extends React.Component {
     return (
       <div
         css={{
-          background: colors.payneGrey,
+          background: colors.darkPurple,
           padding: `${rhythm(4)} ${rhythm(1/2)}`,
         }}
       >

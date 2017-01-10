@@ -54,7 +54,7 @@ class EmailInput extends React.Component {
             type="email"
             css={[
               {
-                background: colors.honeydew,
+                background: colors.charcoalBlue,
                 maxWidth: '90vw',
                 fontSize: rhythm(1/2),
                 border: 'none',
@@ -84,7 +84,7 @@ class EmailInput extends React.Component {
             onClick={(e) => {e.preventDefault(); this.submitForm()}}
           >
             <FaArrowCircleORight
-              color={colors.darkSea}
+              color={colors.weldonBlue}
             />
           </button>
           {

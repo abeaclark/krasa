@@ -39,11 +39,11 @@ const typography = new Typography({
       },
       a: {
         fontWeight: 400,
-        color: colors.darkSea,
+        color: colors.weldonBlue,
         textDecoration: 'none',
       },
       'a:hover': {
-        color: colors.PayneGrey,
+        color: colors.darkPurple,
         textDecoration: 'none',
         cursor: 'pointer',
       },
