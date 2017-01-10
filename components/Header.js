@@ -33,7 +33,7 @@ class Header extends React.Component {
                   color: colors.snow,
                 }}
               >
-                <KrasaCircleLogo color={colors.snow} /> {' '} krasa
+                <KrasaCircleLogo color={colors.snow} /> {' '}
               </Link>
               <Link
                 css={{
