@@ -1,8 +1,3 @@
-# gatsby-starter-blog
-Gatsby starter for creating a blog
+# krasadev.com
 
-Install this starter (assuming Gatsby is installed) by running from your CLI:
-`gatsby new gatsby-blog https://github.com/gatsbyjs/gatsby-starter-blog`
-
-## Running in development
-`gatsby develop`
+Krasa is a San Francisco based digital Design and Development company specializing in designing and building fast, reliable, and beautiful mobile apps, websites, and other digital experiences.
