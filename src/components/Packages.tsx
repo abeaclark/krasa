@@ -16,7 +16,7 @@ const packages = [
     highlighted: false,
   },
   {
-    name: "Growth",
+    name: "Grow",
     price: "$6,000",
     description:
       "Everything you need to optimize and scale your digital presence.",
@@ -35,7 +35,7 @@ const packages = [
     description:
       "Full-spectrum tech leadership for ambitious brands ready to dominate.",
     features: [
-      "Everything in Growth",
+      "Everything in Grow",
       "Custom AI implementation / infrastructure",
       "Major migrations",
       "Employee AI training",

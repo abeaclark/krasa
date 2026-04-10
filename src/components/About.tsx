@@ -1,4 +1,5 @@
 import { ArrowRight, Linkedin } from "lucide-react";
+import { PastSuccesses } from "./PastSuccesses";
 
 export function About() {
   return (
@@ -42,7 +43,7 @@ export function About() {
                 ship.
               </p>
               <p className="text-[15px] text-muted leading-relaxed mb-6">
-                At Krasa, we bring CTO-level thinking to brands that need expert
+                At Krasa, we bring CTO-level execution to brands that need expert
                 tech guidance without the overhead of a full-time hire. From
                 AI implementation to infrastructure, we've got you covered.
               </p>
@@ -74,6 +75,8 @@ export function About() {
               </div>
             </div>
           </div>
+
+          <PastSuccesses />
         </div>
       </div>
     </section>

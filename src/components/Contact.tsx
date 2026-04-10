@@ -51,7 +51,7 @@ export function Contact() {
             fontSize: "clamp(36px,4vw,56px)",
           }}
         >
-          Let's get in touch
+          Get in touch
         </h2>
         <p className="text-lg text-white/50 max-w-[460px] mx-auto mb-10">
           Drop your email and we'll reach out to discuss how Krasa can help your
@@ -102,7 +102,7 @@ export function Contact() {
 
         <div className="flex justify-center gap-5 mt-12">
           <a
-            href="https://twitter.com/kaboracle"
+            href="https://x.com/abe_clark"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[13px] font-semibold text-white/35 no-underline hover:text-white transition-colors"
