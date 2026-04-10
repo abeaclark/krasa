@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-logo: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #f7f7f4;
+  --color-ink: #0e0f0c;
+  --color-muted: #454745;
+  --color-accent: #9fe870;
+  --color-accent-dark: #163300;
+  --color-surface: #ffffff;
+  --color-border: rgba(14, 15, 12, 0.08);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    font-feature-settings: "calt";
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-dark);
+  }
+}

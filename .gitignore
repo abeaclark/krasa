@@ -1,6 +1,4 @@
-node_modules/
-public
-.gatsby-context.js
+node_modules
+dist
 .DS_Store
-.intermediate-representation/
-.webpack-records/
+*.local
