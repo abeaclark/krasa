@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { trackEvent } from "../analytics";
 
 const navItems = [
   { label: "Packages", href: "#packages" },
@@ -15,6 +16,13 @@ export function Header() {
       <nav className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <a
           href="#"
+          onClick={() =>
+            trackEvent("nav_click", {
+              nav_label: "Logo",
+              nav_target: "#",
+              nav_location: "header_desktop",
+            })
+          }
           className="text-xl font-bold tracking-tight text-accent-dark no-underline"
           style={{ fontFamily: "var(--font-logo)" }}
         >
@@ -26,6 +34,13 @@ export function Header() {
             <a
               key={item.href}
               href={item.href}
+              onClick={() =>
+                trackEvent("nav_click", {
+                  nav_label: item.label,
+                  nav_target: item.href,
+                  nav_location: "header_desktop",
+                })
+              }
               className="text-sm font-medium text-accent-dark/70 hover:text-accent-dark transition-colors no-underline tracking-tight"
             >
               {item.label}
@@ -35,6 +50,13 @@ export function Header() {
 
         <a
           href="#contact"
+          onClick={() =>
+            trackEvent("cta_click", {
+              cta_label: "Get in Touch",
+              cta_location: "header",
+              cta_target: "#contact",
+            })
+          }
           className="hidden md:inline-flex items-center px-5 py-2.5 bg-accent-dark text-white text-[13px] font-semibold rounded-full no-underline hover:opacity-90 transition-opacity"
         >
           Get in Touch
@@ -42,7 +64,13 @@ export function Header() {
 
         <button
           className="md:hidden p-2 text-accent-dark bg-transparent border-none cursor-pointer"
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            const next = !open;
+            setOpen(next);
+            trackEvent("mobile_menu_toggle", {
+              menu_state: next ? "open" : "closed",
+            });
+          }}
           aria-label="Toggle menu"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -55,7 +83,14 @@ export function Header() {
             <a
               key={item.href}
               href={item.href}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                trackEvent("nav_click", {
+                  nav_label: item.label,
+                  nav_target: item.href,
+                  nav_location: "header_mobile",
+                });
+              }}
               className="block py-3.5 font-medium text-[15px] text-accent-dark no-underline border-b border-accent-dark/[0.08]"
             >
               {item.label}
@@ -63,7 +98,14 @@ export function Header() {
           ))}
           <a
             href="#contact"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              trackEvent("cta_click", {
+                cta_label: "Get in Touch",
+                cta_location: "header_mobile",
+                cta_target: "#contact",
+              });
+            }}
             className="block mt-4 text-center px-5 py-3 bg-accent-dark text-white text-sm font-semibold rounded-full no-underline"
           >
             Get in Touch

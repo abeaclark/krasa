@@ -1,4 +1,5 @@
 import { ArrowRight, Check } from "lucide-react";
+import { trackEvent } from "../analytics";
 
 const packages = [
   {
@@ -111,6 +112,15 @@ export function Packages() {
 
               <a
                 href="#contact"
+                onClick={() =>
+                  trackEvent("package_select", {
+                    package_name: pkg.name,
+                    package_price: pkg.price,
+                    package_highlighted: pkg.highlighted,
+                    cta_label: "Get Started",
+                    cta_location: "packages_card",
+                  })
+                }
                 className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 font-semibold text-[15px] rounded-full no-underline transition-all active:scale-[0.97] ${
                   pkg.highlighted
                     ? "bg-accent-dark text-white hover:opacity-90"

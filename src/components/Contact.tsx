@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, Send } from "lucide-react";
+import { trackEvent } from "../analytics";
 
 /** From Google Form `data-params`: Message field → `[[286011078,...` → `entry.286011078` */
 const MESSAGE_ENTRY_ID = "entry.286011078";
@@ -16,11 +17,22 @@ export function Contact() {
 
     if (!/(.+)@(.+){2,}\.(.+){2,}/.test(email)) {
       setError("Please enter a valid email");
+      trackEvent("form_error", {
+        form_location: "contact_section",
+        error_field: "email",
+        error_reason: "invalid_email",
+      });
       return;
     }
 
     if (message.length < 25) {
       setError("Please tell us a bit more — at least 25 characters");
+      trackEvent("form_error", {
+        form_location: "contact_section",
+        error_field: "message",
+        error_reason: "too_short",
+        message_length: message.length,
+      });
       return;
     }
 
@@ -37,6 +49,12 @@ export function Contact() {
         mode: "no-cors",
       },
     );
+
+    // GA4 recommended event for lead capture.
+    trackEvent("generate_lead", {
+      form_location: "contact_section",
+      message_length: message.length,
+    });
 
     setSubmitted(true);
   }
@@ -105,6 +123,14 @@ export function Contact() {
             href="https://x.com/abe_clark"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("outbound_click", {
+                link_domain: "x.com",
+                link_url: "https://x.com/abe_clark",
+                link_label: "X",
+                link_location: "contact_section",
+              })
+            }
             className="text-[13px] font-semibold text-white/35 no-underline hover:text-white transition-colors"
           >
             X
@@ -113,6 +139,14 @@ export function Contact() {
             href="https://www.linkedin.com/in/abrahamclark/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("outbound_click", {
+                link_domain: "linkedin.com",
+                link_url: "https://www.linkedin.com/in/abrahamclark/",
+                link_label: "LinkedIn",
+                link_location: "contact_section",
+              })
+            }
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/35 no-underline hover:text-white transition-colors"
           >
             LinkedIn <ArrowRight className="w-3 h-3" />

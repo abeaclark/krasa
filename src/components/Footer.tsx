@@ -1,3 +1,5 @@
+import { trackEvent } from "../analytics";
+
 export function Footer() {
   return (
     <footer className="bg-ink">
@@ -10,6 +12,14 @@ export function Footer() {
             href="https://x.com/abe_clark"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("outbound_click", {
+                link_domain: "x.com",
+                link_url: "https://x.com/abe_clark",
+                link_label: "X",
+                link_location: "footer",
+              })
+            }
             className="text-[13px] font-semibold text-white/35 no-underline hover:text-white transition-colors"
           >
             X
@@ -18,6 +28,14 @@ export function Footer() {
             href="https://www.linkedin.com/in/abrahamclark/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("outbound_click", {
+                link_domain: "linkedin.com",
+                link_url: "https://www.linkedin.com/in/abrahamclark/",
+                link_label: "LinkedIn",
+                link_location: "footer",
+              })
+            }
             className="text-[13px] font-semibold text-white/35 no-underline hover:text-white transition-colors"
           >
             LinkedIn

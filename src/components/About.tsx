@@ -1,5 +1,6 @@
 import { ArrowRight, Linkedin } from "lucide-react";
 import { PastSuccesses } from "./PastSuccesses";
+import { trackEvent } from "../analytics";
 
 export function About() {
   return (
@@ -51,6 +52,14 @@ export function About() {
                 href="https://www.linkedin.com/in/abrahamclark/"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  trackEvent("outbound_click", {
+                    link_domain: "linkedin.com",
+                    link_url: "https://www.linkedin.com/in/abrahamclark/",
+                    link_label: "Connect on LinkedIn",
+                    link_location: "about_section",
+                  })
+                }
                 className="inline-flex items-center gap-2 text-sm font-semibold text-accent-dark no-underline hover:text-accent-dark/80 transition-colors"
               >
                 <Linkedin className="w-4 h-4" /> Connect on LinkedIn{" "}

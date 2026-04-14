@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { trackEvent } from "../analytics";
 
 export function Hero() {
   return (
@@ -25,12 +26,26 @@ export function Hero() {
         <div className="flex gap-3 justify-center flex-wrap">
           <a
             href="#packages"
+            onClick={() =>
+              trackEvent("cta_click", {
+                cta_label: "See Our Packages",
+                cta_location: "hero_primary",
+                cta_target: "#packages",
+              })
+            }
             className="inline-flex items-center gap-2 px-8 py-4 bg-accent-dark text-white font-bold text-base rounded-full no-underline hover:opacity-90 transition-all active:scale-[0.97]"
           >
             See Our Packages <ArrowRight className="w-4 h-4" />
           </a>
           <a
             href="#contact"
+            onClick={() =>
+              trackEvent("cta_click", {
+                cta_label: "Get in Touch",
+                cta_location: "hero_secondary",
+                cta_target: "#contact",
+              })
+            }
             className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-accent-dark/20 text-accent-dark font-semibold text-base rounded-full no-underline hover:border-accent-dark/40 transition-all"
           >
             Get in Touch
