@@ -1,17 +1,19 @@
+"use client";
+
 import { useState } from "react";
 import { ArrowRight, Send } from "lucide-react";
-import { trackEvent } from "../analytics";
-
-/** From Google Form `data-params`: Message field → `[[286011078,...` → `entry.286011078` */
-const MESSAGE_ENTRY_ID = "entry.286011078";
+import { trackEvent } from "@/lib/analytics";
+import { submitLead } from "@/lib/leads";
 
 export function Contact() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [company, setCompany] = useState(""); // honeypot — hidden from users
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -36,19 +38,25 @@ export function Contact() {
       return;
     }
 
-    const body = new URLSearchParams();
-    body.set("entry.1565278741", email);
-    body.set(MESSAGE_ENTRY_ID, message);
+    setSubmitting(true);
+    const result = await submitLead({
+      source: "contact",
+      email,
+      message,
+      hp: company,
+      meta: { form_location: "contact_section" },
+    });
+    setSubmitting(false);
 
-    fetch(
-      "https://docs.google.com/forms/d/e/1FAIpQLSeWe-ldEj7_t1tPJl2BRw9Hd4qW55LZwbNUPlo5uUXEU2XxAw/formResponse?origin=*",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-        mode: "no-cors",
-      },
-    );
+    if (!result.ok) {
+      setError("Something went wrong — please try again or email us directly.");
+      trackEvent("form_error", {
+        form_location: "contact_section",
+        error_field: "submit",
+        error_reason: "request_failed",
+      });
+      return;
+    }
 
     // GA4 recommended event for lead capture.
     trackEvent("generate_lead", {
@@ -105,18 +113,34 @@ export function Contact() {
               rows={3}
               className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-2xl text-[15px] text-white placeholder:text-white/30 outline-none focus:border-accent/50 transition-colors resize-none"
             />
+            {/* Honeypot: visually hidden, off-screen, not tab-reachable. */}
+            <input
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                width: 1,
+                height: 1,
+                opacity: 0,
+              }}
+            />
             <button
               type="submit"
-              className="w-full px-7 py-3.5 bg-accent text-accent-dark text-[15px] font-semibold rounded-full border-none cursor-pointer whitespace-nowrap inline-flex items-center justify-center gap-2 hover:brightness-95 transition-all active:scale-[0.97]"
+              disabled={submitting}
+              className="w-full px-7 py-3.5 bg-accent text-accent-dark text-[15px] font-semibold rounded-full border-none cursor-pointer whitespace-nowrap inline-flex items-center justify-center gap-2 hover:brightness-95 transition-all active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Send className="w-4 h-4" /> Send
+              <Send className="w-4 h-4" /> {submitting ? "Sending…" : "Send"}
             </button>
           </form>
         )}
 
-        {error && (
-          <p className="text-sm text-red-400 mt-3">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
 
         <div className="flex justify-center gap-5 mt-12">
           <a

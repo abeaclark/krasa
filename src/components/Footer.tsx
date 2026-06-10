@@ -1,4 +1,6 @@
-import { trackEvent } from "../analytics";
+"use client";
+
+import { trackEvent } from "@/lib/analytics";
 
 export function Footer() {
   return (

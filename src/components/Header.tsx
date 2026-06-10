@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { trackEvent } from "../analytics";
+import { trackEvent } from "@/lib/analytics";
 
 const navItems = [
   { label: "Packages", href: "#packages" },

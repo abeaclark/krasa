@@ -1,5 +1,7 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
-import { trackEvent } from "../analytics";
+import { trackEvent } from "@/lib/analytics";
 
 export function Hero() {
   return (

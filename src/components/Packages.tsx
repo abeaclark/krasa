@@ -1,5 +1,7 @@
+"use client";
+
 import { ArrowRight, Check } from "lucide-react";
-import { trackEvent } from "../analytics";
+import { trackEvent } from "@/lib/analytics";
 
 const packages = [
   {
