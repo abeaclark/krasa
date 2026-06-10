@@ -12,7 +12,7 @@ Sites served: `krasadev.com`, `krasa.ai`, `localservicegroup.com`,
 ## How it fits together
 
 ```
-  [ any site's form ] --POST JSON--> https://krasadev.com/api/leads
+  [ any site's form ] --POST JSON--> https://www.krasadev.com/api/leads
                                           |
                                           |-- insert row  --> Supabase: public.leads
                                           |-- notify      --> Slack incoming webhook
@@ -86,7 +86,7 @@ Responses: `201 { ok: true, id }` · `400 { ok: false, error }` ·
 ## Per-site integration
 
 Each consumer site has a copy of `src/lib/leads.ts` exporting `submitLead()`,
-pre-set to its own `site` and pointed at `https://krasadev.com/api/leads`
+pre-set to its own `site` and pointed at `https://www.krasadev.com/api/leads`
 (override with `NEXT_PUBLIC_LEADS_ENDPOINT`). Wired forms:
 
 - **krasadev.com** — `Contact` section (`src/components/Contact.tsx`)
