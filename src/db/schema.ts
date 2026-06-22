@@ -68,3 +68,36 @@ export const leads = pgTable(
 
 export type Lead = InferSelectModel<typeof leads>;
 export type NewLead = InferInsertModel<typeof leads>;
+
+/**
+ * heartbeats — keep-alive ping log.
+ *
+ * Supabase pauses free-tier projects that go too long without DB activity.
+ * A Vercel cron hits /api/cron/heartbeat once a day and inserts one row here,
+ * which is enough write activity to keep the project from being paused. The
+ * table doubles as a simple uptime/liveness audit trail.
+ */
+export const heartbeats = pgTable(
+  "heartbeats",
+  {
+    id: uuid("id")
+      .default(sql`gen_random_uuid()`)
+      .primaryKey(),
+
+    // Where the ping came from, e.g. "vercel-cron".
+    source: varchar("source").default("vercel-cron").notNull(),
+
+    // Optional free-form details (region, deployment id, etc.).
+    meta: jsonb("meta")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("heartbeats_created_at_idx").on(t.created_at)],
+);
+
+export type Heartbeat = InferSelectModel<typeof heartbeats>;
+export type NewHeartbeat = InferInsertModel<typeof heartbeats>;
