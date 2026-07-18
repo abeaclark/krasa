@@ -17,6 +17,23 @@ export interface LeadIntakePayload {
   meta?: Record<string, unknown>;
   // Honeypot: real users never fill this. Bots usually do.
   hp?: string;
+  /**
+   * When present, this is an UPDATE to an existing lead (returned as `id` from
+   * the original POST): meta is merged in and the Slack notification threads
+   * under the original message instead of creating a new lead.
+   */
+  leadId?: string;
+  /** Optional short label for what this update represents, e.g. "paperwork-details". */
+  stage?: string;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function cleanLeadId(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return UUID_RE.test(t) ? t : null;
 }
 
 export interface NormalizedLead {
