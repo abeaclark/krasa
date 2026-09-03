@@ -22,14 +22,62 @@ const BUCKET = process.env.SUPABASE_LEAD_DOCS_BUCKET || "lead-documents";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function config(): { url: string; key: string } | null {
-  const url = process.env.SUPABASE_URL?.replace(/\/+$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Trim aggressively: pasting into the Vercel dashboard very easily captures a
+  // trailing newline, and a key with stray whitespace fails JWT verification
+  // with an error that says nothing about whitespace.
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) return null;
   return { url, key };
 }
 
 export function storageConfigured(): boolean {
   return config() !== null;
+}
+
+/** Legacy service_role keys are JWTs; the 2025+ secret keys (sb_secret_…) are not. */
+function isJwt(key: string): boolean {
+  return /^ey[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\./.test(key);
+}
+
+/**
+ * Auth headers for the Storage API.
+ *
+ * Supabase now issues two shapes of secret credential and they are NOT
+ * interchangeable across headers:
+ *
+ *  - Legacy `service_role` keys are JWTs. Storage verifies them on
+ *    `Authorization: Bearer`, and supabase-js also sends `apikey`.
+ *  - The newer `sb_secret_…` keys are opaque, not JWTs. Putting one on
+ *    `Authorization: Bearer` makes Storage try to verify it as a JWT and fail
+ *    with `"signature verification failed"` — which reads like a wrong key but
+ *    is really a wrong header. They belong on `apikey` alone.
+ *
+ * So: send both for a JWT, `apikey` only for a secret key.
+ */
+function authHeaders(key: string): Record<string, string> {
+  return isJwt(key)
+    ? { apikey: key, Authorization: `Bearer ${key}` }
+    : { apikey: key };
+}
+
+/**
+ * Non-secret facts about the configured key, for error logs. Decodes only the
+ * JWT payload (which is public, not the signature) to surface the two things
+ * that actually go wrong: key is for a different project, or wrong role.
+ */
+function describeKey(url: string, key: string): string {
+  if (!isJwt(key)) return "secret-key format (sb_secret_…), sent on apikey";
+  try {
+    const payload = JSON.parse(
+      Buffer.from(key.split(".")[1], "base64url").toString("utf8"),
+    ) as { ref?: string; role?: string };
+    const projectRef = new URL(url).hostname.split(".")[0];
+    const match = payload.ref === projectRef ? "matches" : `MISMATCH (url=${projectRef})`;
+    return `legacy JWT, role=${payload.role}, ref=${payload.ref} ${match}`;
+  } catch {
+    return "unparseable JWT — check for truncation or stray whitespace";
+  }
 }
 
 /** File types we accept from a purchase-paperwork upload. */
@@ -142,7 +190,8 @@ export async function createSignedUploadUrl(opts: {
   contentType: string;
   size: number;
 }): Promise<
-  { ok: true; uploadUrl: string; doc: StoredDocument } | { ok: false; error: string }
+  | { ok: true; uploadUrl: string; doc: StoredDocument }
+  | { ok: false; error: string; status?: number }
 > {
   const cfg = config();
   if (!cfg) return { ok: false, error: "Storage is not configured" };
@@ -158,7 +207,7 @@ export async function createSignedUploadUrl(opts: {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${cfg.key}`,
+        ...authHeaders(cfg.key),
         "Content-Type": "application/json",
       },
       body: "{}",
@@ -167,8 +216,25 @@ export async function createSignedUploadUrl(opts: {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    console.error("[storage] sign-upload failed", res.status, detail);
-    return { ok: false, error: "Could not start the upload" };
+    console.error(
+      "[storage] sign-upload failed",
+      res.status,
+      detail,
+      "| key:",
+      describeKey(cfg.url, cfg.key),
+      "| bucket:",
+      BUCKET,
+    );
+    // Surface the upstream status so this is diagnosable without digging
+    // through Vercel logs. 404 = bucket missing (run
+    // supabase/0002_lead_documents.sql); 400/401/403 = bad service_role key or
+    // wrong SUPABASE_URL. The response body is logged, not returned — it can
+    // echo internals.
+    return {
+      ok: false,
+      error: `Could not start the upload (storage ${res.status})`,
+      status: res.status,
+    };
   }
 
   // Supabase returns a relative URL carrying the token:
@@ -227,7 +293,7 @@ export async function uploadLeadDocument(opts: {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${cfg.key}`,
+        ...authHeaders(cfg.key),
         "Content-Type": contentType,
         "x-upsert": "false",
         "cache-control": "3600",
@@ -270,7 +336,7 @@ export async function signLeadDocument(
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${cfg.key}`,
+        ...authHeaders(cfg.key),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ expiresIn: expiresInSeconds }),
