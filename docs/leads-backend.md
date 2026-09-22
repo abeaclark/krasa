@@ -179,3 +179,62 @@ no migration needed since it's a plain varchar.
 - Slack failures never fail lead capture (the row is already stored).
 - The honeypot (`hp`) silently drops obvious bots; flip the handler in
   `src/app/api/leads/route.ts` if you'd rather store them as `status: "spam"`.
+
+---
+
+## Email (Resend)
+
+Two messages, both sent from this repo because this is where the leads and the
+documents already live.
+
+**1. Letters delivered** — `POST /api/emails/letters`, called by the funnel the
+first time someone downloads. The PDFs are uploaded through the normal signed
+upload flow first, so this route only ever sees storage paths and signs them
+into 30-day download links. Idempotent: a second call reports `alreadySent` and
+sends nothing.
+
+**2. Outcome check-ins** — `GET /api/cron/outcome-emails`, daily at 17:00 UTC
+(07:00 Hawaii). Asks at day 30, 60 and 90 whether the refund arrived, and stops
+the moment someone answers. Until this existed, `letters-downloaded` was the
+terminal event and we had never learned whether a single dollar was refunded.
+
+Answers come back through one-click links on **refundauto.com**, which proxies
+`/api/outcome/<token>` and `/api/unsubscribe/<token>` straight back to this API.
+The link has to sit on the domain the email came from — a RefundAuto message
+whose buttons point at krasadev.com is indistinguishable from phishing. Set
+`EMAIL_LINK_ORIGIN` to the customer-facing site, not to this one. The token is a stateless HMAC over the lead id
+(`src/lib/email/tokens.ts`) — no login, nothing to store, and it expires on its
+own. The answer is recorded on `GET`, which is a deliberate trade: mail
+scanners do prefetch links, so the landing page lets a human change the answer
+in one more click, and every answer is appended to `meta.outcomeHistory` so a
+correction is visible as a correction.
+
+A recorded outcome also moves the lead's `status` — `received` → `won`,
+`denied` → `lost`. It is the first thing that has ever moved a lead off `new`.
+
+Unsubscribe is `/api/unsubscribe/<token>`, wired to both the footer link and
+the RFC 8058 `List-Unsubscribe-Post` header, which Gmail and Yahoo require on
+bulk mail. It stops the check-ins; it does not delete anything.
+
+### What the lead row gains
+
+| path | meaning |
+|---|---|
+| `meta.emails.letters` | `{ sentAt, count, providerId }` — the delivery receipt |
+| `meta.emails.outcomeSteps` | `[30, 60]` — which check-ins have gone out |
+| `meta.outcome` | `{ answer, recordedAt }` — the answer, once |
+| `meta.outcomeHistory` | every answer including corrections |
+| `meta.emailUnsubscribedAt` | set → the cron skips them forever |
+
+### Setup
+
+1. Resend → add the domain `mail.refundauto.com`, publish the DNS records it
+   gives you (DKIM, SPF, and the DMARC record — Gmail and Yahoo both require
+   DMARC for bulk senders now).
+2. Set `RESEND_API_KEY`, `EMAIL_TOKEN_SECRET` (`openssl rand -hex 32`) and
+   `EMAIL_LINK_ORIGIN` in Vercel.
+3. `npm run test:email` covers tokens, templates and the follow-up schedule
+   with no database and no network.
+
+Leave `RESEND_API_KEY` unset locally: sends are skipped and logged, and
+everything else still works.
