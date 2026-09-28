@@ -15,6 +15,8 @@ export interface LetterSummary {
   recipient: string;
   /** Signed, expiring download link. */
   url: string;
+  /** What to do first for this product, e.g. "Call Luther Kia's finance office at (952) 258-8400". */
+  firstStep?: string | null;
 }
 
 const esc = (s: string) =>
@@ -32,14 +34,14 @@ export function lettersEmail(opts: {
 }) {
   const hi = opts.firstName ? `Hi ${esc(opts.firstName)},` : "Hi,";
   const n = opts.letters.length;
-  const subject =
-    n === 1 ? "Your cancellation letter is ready" : `Your ${n} cancellation letters are ready`;
+  const subject = "Your cancellation kit is ready";
 
   const list = opts.letters
     .map(
       (l) => `<tr><td style="padding:0 0 14px;">
         <p style="margin:0 0 3px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#131c18;">${esc(l.title)}</p>
-        <p style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#6b7a73;">Goes to ${esc(l.recipient)}</p>
+        ${l.firstStep ? `<p style="margin:0 0 3px;font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#131c18;">First: ${esc(l.firstStep)}</p>` : ""}
+        <p style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#6b7a73;">Letter goes to ${esc(l.recipient)}</p>
         <a href="${l.url}" style="font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#15624a;">Download PDF</a>
       </td></tr>`,
     )
@@ -48,9 +50,7 @@ export function lettersEmail(opts: {
   const bodyHtml = [
     paragraph(hi),
     paragraph(
-      n === 1
-        ? "Here is the cancellation letter you generated. Print it, sign it, and send it to the address on the letter."
-        : `Here are the ${n} cancellation letters you generated. Print them, sign them, and send each one to the address printed on it.`,
+      "Here is your cancellation kit. For each product, do the first step below — often a quick call or the company's own form. Sign the letter and keep it: it's your dated, written request.",
     ),
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">${list}</table>`,
     paragraph(
@@ -58,9 +58,9 @@ export function lettersEmail(opts: {
     ),
     `<p style="margin:24px 0 10px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#131c18;">Three things that make this work</p>`,
     `<ol style="margin:0 0 18px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">
-      <li style="margin-bottom:6px;">Send it with tracking. Certified mail with return receipt costs about $9 and gives you the date they received it, which is the date everything else is measured from.</li>
-      <li style="margin-bottom:6px;">Include a copy of your purchase paperwork if you have it, and your payoff letter or bill of sale if the car is gone.</li>
-      <li>Keep a copy of everything you send, including the signed letter itself.</li>
+      <li style="margin-bottom:6px;">Do the first step for each product, and note the date and who you spoke to.</li>
+      <li style="margin-bottom:6px;">Anything you mail, send with tracking. Certified mail with return receipt costs about $9 and proves the date they received it — the date your refund is measured from.</li>
+      <li>Keep a copy of everything you send or sign, plus your payoff letter or bill of sale if the car is gone.</li>
     </ol>`,
     paragraph(
       "Most refunds take four to eight weeks. If you have not heard anything after two weeks, call the number on the letter and ask them to confirm they received it.",
@@ -73,18 +73,16 @@ export function lettersEmail(opts: {
   const text = [
     hi,
     "",
-    n === 1
-      ? "Here is the cancellation letter you generated. Print it, sign it, and send it to the address on the letter."
-      : `Here are the ${n} cancellation letters you generated. Print them, sign them, and send each to the address printed on it.`,
+    "Here is your cancellation kit. For each product, do the first step below — often a quick call or the company's own form. Sign the letter and keep it: it's your dated, written request.",
     "",
-    ...opts.letters.map((l) => `${l.title}\n  Goes to ${l.recipient}\n  ${l.url}`),
+    ...opts.letters.map((l) => `${l.title}${l.firstStep ? `\n  First: ${l.firstStep}` : ""}\n  Letter goes to ${l.recipient}\n  ${l.url}`),
     "",
     `These links work for ${opts.linkDays} days. Save the PDFs somewhere safe.`,
     "",
     "Three things that make this work:",
-    "1. Send it with tracking — certified mail with return receipt gives you the date they received it.",
-    "2. Include your purchase paperwork, and your payoff letter or bill of sale if the car is gone.",
-    "3. Keep a copy of everything you send.",
+    "1. Do the first step for each product, and note the date and who you spoke to.",
+    "2. Anything you mail, send with tracking — certified mail proves the date they received it.",
+    "3. Keep a copy of everything you send or sign.",
     "",
     "Most refunds take four to eight weeks. If you have not heard anything after two weeks, call the number on the letter and confirm they received it.",
     textFooter(),
@@ -94,7 +92,7 @@ export function lettersEmail(opts: {
     subject,
     html: wrap({
       preheader:
-        n === 1 ? "Print it, sign it, send it with tracking." : "Print them, sign them, send with tracking.",
+        "What to do first for each product, and your letters.",
       bodyHtml,
     }),
     text,

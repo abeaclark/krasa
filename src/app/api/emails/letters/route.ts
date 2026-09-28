@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
       title: String(r.title || "Cancellation letter").slice(0, 200),
       recipient: String(r.recipient || "the administrator").slice(0, 200),
       url,
+      firstStep: typeof r.firstStep === "string" ? r.firstStep.slice(0, 200) : null,
     });
   }
 
