@@ -19,7 +19,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * narrow — recording an outcome, or unsubscribing.
  */
 
-export type TokenPurpose = "outcome" | "unsubscribe";
+/**
+ * "restore" opens someone's cancellation kit on a new device. It carries no
+ * personal data and only works for the lead it names — possession of the
+ * link is the proof that you own the inbox it was sent to.
+ */
+export type TokenPurpose = "outcome" | "unsubscribe" | "restore";
 
 const DEFAULT_TTL_DAYS = 180;
 
@@ -51,7 +56,7 @@ export function createToken(
       JSON.stringify({
         l: leadId,
         p: purpose,
-        e: Math.floor(Date.now() / 1000) + ttlDays * 86400,
+        e: Math.floor(Date.now() / 1000 + ttlDays * 86400),
       }),
     ),
   );

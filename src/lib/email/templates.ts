@@ -31,6 +31,8 @@ export function lettersEmail(opts: {
   letters: LetterSummary[];
   /** How long the download links last, in days. */
   linkDays: number;
+  /** One-click link that reopens their whole kit on any device. */
+  kitUrl?: string | null;
 }) {
   const hi = opts.firstName ? `Hi ${esc(opts.firstName)},` : "Hi,";
   const n = opts.letters.length;
@@ -56,6 +58,9 @@ export function lettersEmail(opts: {
     paragraph(
       `These links work for ${opts.linkDays} days. Save the PDFs somewhere safe — that way you still have them if you need to send a second copy.`,
     ),
+    ...(opts.kitUrl
+      ? [`<div style="margin:0 0 8px;">${button({ label: "Open your kit on any device", href: opts.kitUrl })}</div>`]
+      : []),
     `<p style="margin:24px 0 10px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#131c18;">Three things that make this work</p>`,
     `<ol style="margin:0 0 18px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">
       <li style="margin-bottom:6px;">Do the first step for each product, and note the date and who you spoke to.</li>
@@ -78,6 +83,7 @@ export function lettersEmail(opts: {
     ...opts.letters.map((l) => `${l.title}${l.firstStep ? `\n  First: ${l.firstStep}` : ""}\n  Letter goes to ${l.recipient}\n  ${l.url}`),
     "",
     `These links work for ${opts.linkDays} days. Save the PDFs somewhere safe.`,
+    ...(opts.kitUrl ? ["", `Open your kit on any device: ${opts.kitUrl}`] : []),
     "",
     "Three things that make this work:",
     "1. Do the first step for each product, and note the date and who you spoke to.",
@@ -213,4 +219,30 @@ export function outcomeLandingPage(opts: {
   </p>
   <p style="margin:0;"><a href="${EMAIL.siteUrl}" style="color:#15624a;font-size:15px;">Back to ${EMAIL.brand}</a></p>
 </div></body></html>`;
+}
+
+// ---------------------------------------------------------------------------
+// 3. Get back to your kit — a sign-in link, no password
+// ---------------------------------------------------------------------------
+
+export function restoreEmail(opts: { firstName?: string | null; url: string; hours: number }) {
+  const hi = opts.firstName ? `Hi ${esc(opts.firstName)},` : "Hi,";
+  const bodyHtml = [
+    paragraph(hi),
+    paragraph("Here's the link to open your cancellation kit on this device — your answers, your plan, and anything you've paid for."),
+    `<div style="margin:0 0 8px;">${button({ label: "Open my kit", href: opts.url, primary: true })}</div>`,
+    paragraph(
+      `<span style="color:#6b7a73;font-size:14px;">The link works for ${opts.hours} hours. If you didn't ask for it, you can ignore this email — nothing changes unless the link is opened.</span>`,
+    ),
+  ].join("");
+  const text = [
+    hi,
+    "",
+    "Here's the link to open your cancellation kit on this device — your answers, your plan, and anything you've paid for:",
+    opts.url,
+    "",
+    `The link works for ${opts.hours} hours. If you didn't ask for it, you can ignore this email.`,
+    textFooter(),
+  ].join("\n");
+  return { subject: "Your Refund Auto kit link", html: wrap({ preheader: "Open your cancellation kit on this device.", bodyHtml }), text };
 }

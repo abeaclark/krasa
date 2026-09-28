@@ -6,6 +6,8 @@ import { cleanLeadId, corsHeaders, isKnownSite } from "@/lib/leads-intake";
 import { signLeadDocument } from "@/lib/storage";
 import { sendEmail } from "@/lib/email/client";
 import { lettersEmail, type LetterSummary } from "@/lib/email/templates";
+import { createToken } from "@/lib/email/tokens";
+import { EMAIL } from "@/lib/email/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,7 +101,13 @@ export async function POST(req: NextRequest) {
   }
 
   const firstName = (lead.name || "").trim().split(/\s+/)[0] || null;
-  const msg = lettersEmail({ firstName, letters, linkDays: LINK_DAYS });
+  const kitToken = createToken(leadId, "restore", LINK_DAYS);
+  const msg = lettersEmail({
+    firstName,
+    letters,
+    linkDays: LINK_DAYS,
+    kitUrl: kitToken ? `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}` : null,
+  });
   const sent = await sendEmail({
     to: lead.email,
     subject: msg.subject,
