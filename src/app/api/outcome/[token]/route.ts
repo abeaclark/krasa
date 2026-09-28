@@ -5,6 +5,7 @@ import { leads } from "@/db/schema";
 import { verifyToken } from "@/lib/email/tokens";
 import { outcomeLandingPage } from "@/lib/email/templates";
 import { EMAIL } from "@/lib/email/config";
+import { refreshLeadCard } from "@/lib/slack";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +79,16 @@ export async function GET(
       updated_at: new Date(),
     })
     .where(eq(leads.id, v.leadId));
+
+  // Edit the lead's Slack card, and say so in its thread — this is the
+  // number the whole business is measured by.
+  const [fresh] = await db.select().from(leads).where(eq(leads.id, v.leadId)).limit(1);
+  if (fresh) {
+    await refreshLeadCard(fresh, {
+      text: answer === "received" ? "🎉 Refund received" : answer === "denied" ? "❌ Refund denied" : "⏳ Still waiting on refund",
+      broadcast: answer !== "waiting",
+    });
+  }
 
   return html(
     outcomeLandingPage({

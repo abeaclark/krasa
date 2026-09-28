@@ -1,4 +1,5 @@
 import type { Lead } from "@/db/schema";
+import { buildRefundAutoCard, LOUD_STAGES } from "./slackLeadCard";
 
 /**
  * Slack notifications for leads.
@@ -40,6 +41,7 @@ function botConfig(): { token: string; channel: string } | null {
 async function postViaBot(
   payload: SlackPayload,
   threadTs?: string,
+  broadcast = false,
 ): Promise<SlackMessageRef | null> {
   const cfg = botConfig();
   if (!cfg) return null;
@@ -53,7 +55,7 @@ async function postViaBot(
       body: JSON.stringify({
         channel: cfg.channel,
         ...payload,
-        ...(threadTs ? { thread_ts: threadTs } : {}),
+        ...(threadTs ? { thread_ts: threadTs, ...(broadcast ? { reply_broadcast: true } : {}) } : {}),
       }),
     });
     const data = (await res.json()) as {
@@ -74,6 +76,28 @@ async function postViaBot(
     return null;
   }
 }
+
+/** Edit a posted message in place (bot transport only). */
+async function updateViaBot(ref: SlackMessageRef, payload: SlackPayload): Promise<boolean> {
+  const cfg = botConfig();
+  if (!cfg) return false;
+  try {
+    const res = await fetch("https://slack.com/api/chat.update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8", Authorization: `Bearer ${cfg.token}` },
+      body: JSON.stringify({ channel: ref.channel, ts: ref.ts, ...payload }),
+    });
+    const data = (await res.json()) as { ok: boolean; error?: string };
+    if (!data.ok) console.error(`[slack] chat.update failed: ${data.error}`);
+    return data.ok;
+  } catch (err) {
+    console.error("[slack] failed to update message", err);
+    return false;
+  }
+}
+
+/** Sites that get the single, edited-in-place lead card. */
+const CARD_SITES = new Set(["refundauto.com"]);
 
 /** Post via the legacy incoming webhook (no ts returned, so no threading). */
 async function postViaWebhook(payload: SlackPayload): Promise<void> {
@@ -307,7 +331,7 @@ function dashboardFolderLink(objectPath: string): string | null {
 export async function notifySlackNewLead(
   lead: Lead,
 ): Promise<SlackMessageRef | null> {
-  const payload = buildNewLeadPayload(lead);
+  const payload = CARD_SITES.has(lead.site) ? cardPayload(lead) : buildNewLeadPayload(lead);
   const ref = await postViaBot(payload);
   if (ref) return ref;
   await postViaWebhook(payload);
@@ -325,6 +349,16 @@ export async function notifySlackLeadUpdate(
   changedMeta: Record<string, unknown>,
   parent: SlackMessageRef | null,
 ): Promise<void> {
+  // Card sites: edit the one message; only a few stages earn a thread reply.
+  if (CARD_SITES.has(lead.site) && parent && botConfig()) {
+    await updateViaBot(parent, cardPayload(lead));
+    const loud = stage ? LOUD_STAGES[stage] : undefined;
+    if (loud) {
+      const who = lead.name || lead.email || "lead";
+      await postViaBot({ text: `${loud.text} — ${who}` }, parent.ts, loud.broadcast);
+    }
+    return;
+  }
   const payload = buildUpdatePayload(lead, stage, changedMeta);
   if (parent && botConfig()) {
     const ref = await postViaBot(payload, parent.ts);
@@ -333,4 +367,21 @@ export async function notifySlackLeadUpdate(
   // Fallback: bot without a stored parent, or webhook-only setups.
   const ref = await postViaBot(payload);
   if (!ref) await postViaWebhook(payload);
+}
+
+function cardPayload(lead: Lead): SlackPayload {
+  const docs = (lead.meta as Record<string, unknown> | null)?.documents;
+  const first = Array.isArray(docs) && docs[0] && typeof (docs[0] as { path?: unknown }).path === "string" ? (docs[0] as { path: string }).path : "";
+  return buildRefundAutoCard(lead, dashboardFolderLink(first));
+}
+
+/**
+ * Re-render a lead's card after a change made outside /api/leads (a refund
+ * outcome from an email click, say), with an optional thread reply.
+ */
+export async function refreshLeadCard(lead: Lead, reply?: { text: string; broadcast?: boolean }): Promise<void> {
+  const ref = ((lead.meta ?? {}) as Record<string, unknown>)._slack as SlackMessageRef | undefined;
+  if (!CARD_SITES.has(lead.site) || !ref || !botConfig()) return;
+  await updateViaBot(ref, cardPayload(lead));
+  if (reply) await postViaBot({ text: reply.text }, ref.ts, reply.broadcast);
 }
