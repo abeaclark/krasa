@@ -20,15 +20,12 @@ const KIT_PRICE = 49;
  * Every 30 minutes: the "didn't pay" drip for RefundAuto (lib/email/drip.ts).
  *
  *   GET /api/cron/drip-emails   (Vercel cron, Bearer CRON_SECRET)
- *
- * Off unless DRIP_ENABLED=1, so it can't start selling before payments are live.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-  if (process.env.DRIP_ENABLED !== "1") return NextResponse.json({ ok: true, disabled: true });
   if (!tokensConfigured()) {
     return NextResponse.json({ ok: false, error: "EMAIL_TOKEN_SECRET is not set" }, { status: 503 });
   }
