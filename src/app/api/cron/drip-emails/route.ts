@@ -38,7 +38,34 @@ export async function GET(req: NextRequest) {
   const skipped: Record<string, number> = {};
   const failures: string[] = [];
 
-  for (const lead of rows) {
+  // People re-run the funnel, so one person can have several leads. Treat
+  // them as one: if ANY of their leads paid, downloaded, got their letters
+  // emailed or already started the drip, the person is done/handled — and
+  // only their newest lead is ever emailed.
+  const byEmail = new Map<string, typeof rows>();
+  for (const l of rows) {
+    if (!l.email) continue;
+    const k = l.email.trim().toLowerCase();
+    byEmail.set(k, [...(byEmail.get(k) ?? []), l]);
+  }
+  const allRecent = await db.select().from(leads).where(eq(leads.site, "refundauto.com"));
+  const handled = new Set<string>();
+  for (const l of allRecent) {
+    if (!l.email) continue;
+    const m = (l.meta ?? {}) as Record<string, unknown>;
+    const st = Array.isArray(m._stages) ? (m._stages as { stage?: string }[]).map((x) => x.stage) : [];
+    const em = (m.emails ?? {}) as Record<string, unknown>;
+    if (m.purchase || m.emailUnsubscribedAt || em.letters || st.includes("letters-downloaded")) handled.add(l.email.trim().toLowerCase());
+  }
+  const candidates = [...byEmail.entries()]
+    .filter(([email]) => !handled.has(email))
+    .map(([, ls]) => {
+      // The lead the drip already runs on, else the newest.
+      const withDrip = ls.find((l) => dripState((l.meta ?? {}) as Record<string, unknown>).sent.length > 0);
+      return withDrip ?? ls.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0];
+    });
+
+  for (const lead of candidates) {
     if (sent >= BATCH_LIMIT) break;
     const meta = (lead.meta ?? {}) as Record<string, unknown>;
     const decision = dueDripStep({ meta, createdAt: new Date(lead.created_at), hasEmail: !!lead.email, now });

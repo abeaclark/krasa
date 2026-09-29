@@ -26,6 +26,11 @@ export const SEND_HOURS: [number, number] = [9, 20];
 export const OFFER_HOURS = 72;
 /** Don't start a drip for leads older than this (no surprise emails to old leads). */
 export const MAX_START_AGE_MS = 3 * 86400_000;
+/**
+ * Nobody who came through before the paywall shipped gets the drip — many of
+ * them already have their letters for free.
+ */
+export const DRIP_LAUNCH = Date.parse("2026-09-28T23:00:00Z");
 
 type Meta = Record<string, unknown>;
 
@@ -74,6 +79,9 @@ export function dueDripStep(opts: {
   if (!opts.hasEmail) return { skip: "no email" };
   if (meta.purchase) return { skip: "paid" };
   if (meta.emailUnsubscribedAt) return { skip: "unsubscribed" };
+  if (opts.createdAt.getTime() < DRIP_LAUNCH) return { skip: "before launch" };
+  if ((meta.emails as Meta | undefined)?.letters) return { skip: "letters emailed" };
+  if (meta.hasProducts === "no") return { skip: "no products" };
 
   const stages = new Set((Array.isArray(meta._stages) ? (meta._stages as { stage?: string }[]) : []).map((s) => s.stage));
   const plan = meta.plan as { complete?: boolean } | undefined;
