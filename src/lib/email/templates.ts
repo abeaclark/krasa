@@ -33,6 +33,8 @@ export function lettersEmail(opts: {
   linkDays: number;
   /** One-click link that reopens their whole kit on any device. */
   kitUrl?: string | null;
+  /** Mention the later "did it arrive?" check-in (not for paying customers). */
+  checkIn?: boolean;
 }) {
   const hi = opts.firstName ? `Hi ${esc(opts.firstName)},` : "Hi,";
   const n = opts.letters.length;
@@ -70,9 +72,13 @@ export function lettersEmail(opts: {
     paragraph(
       "Most refunds take four to eight weeks. If you have not heard anything after two weeks, call the number on the letter and ask them to confirm they received it.",
     ),
-    paragraph(
-      `<span style="color:#6b7a73;font-size:14px;">We will check in once your letters have had time to land, to ask whether the money actually arrived. One click, and it helps us know whether any of this works.</span>`,
-    ),
+    ...(opts.checkIn === false
+      ? []
+      : [
+          paragraph(
+            `<span style="color:#6b7a73;font-size:14px;">We will check in once your letters have had time to land, to ask whether the money actually arrived. One click, and it helps us know whether any of this works.</span>`,
+          ),
+        ]),
   ].join("");
 
   const text = [
@@ -245,4 +251,119 @@ export function restoreEmail(opts: { firstName?: string | null; url: string; hou
     textFooter(),
   ].join("\n");
   return { subject: "Your Refund Auto kit link", html: wrap({ preheader: "Open your cancellation kit on this device.", bodyHtml }), text };
+}
+
+// ---------------------------------------------------------------------------
+// 4. "Didn't pay" drip (see lib/email/drip.ts for who gets what, when)
+// ---------------------------------------------------------------------------
+
+export interface DripData {
+  firstName?: string | null;
+  /** e.g. "$1,660–$3,960" */
+  estimate?: string | null;
+  /** e.g. ["GAP → GS Administrators", "Extended warranty → Dealers Alliance"] */
+  products: string[];
+  /** Plan's first steps, e.g. ["GAP coverage: form", "Extended warranty (VSC): call"] */
+  firstSteps: string[];
+  /** Latest date a full refund may still be possible, when the paperwork showed a purchase date. */
+  fullRefundUntil?: string | null;
+  kitUrl: string;
+  unsubscribeUrl: string;
+  offer?: { code: string; expires: string; url: string; price: string; fullPrice: string } | null;
+}
+
+const METHOD_TIP: Record<string, string> = {
+  form: "needs the company's own cancellation form — it's in your kit, already matched to your contract",
+  call: "cancels fastest by phone — your kit has the number and exactly what to say",
+  dealer: "goes through the dealership's finance office — your kit has their number and what to ask for",
+  lender: "goes through your lender — your kit has who to call and what to say",
+  notarized: "needs a notarized form — your kit tells you where to get it done free",
+  mail: "cancels by mail — your letter is filled in and ready to sign",
+  claim: "is a GAP claim, not a cancellation — your kit walks you through opening it",
+};
+
+export function dripEmail(step: import("./drip").DripStep, d: DripData) {
+  const hi = d.firstName ? `Hi ${esc(d.firstName)},` : "Hi,";
+  const list = d.products.length
+    ? `<ul style="margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">${d.products.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`
+    : "";
+  const cta = (label: string, href: string) => `<div style="margin:0 0 16px;">${button({ label, href, primary: true })}</div>`;
+  const est = d.estimate ? ` — an estimated <strong>${esc(d.estimate)}</strong>` : "";
+
+  let subject = "";
+  let preheader = "";
+  let body: string[] = [];
+  let text: string[] = [];
+
+  if (step === "ready") {
+    subject = "Your cancellation kit is ready";
+    preheader = "Who to contact for each product, and your paperwork filled in.";
+    body = [
+      paragraph(hi),
+      paragraph(`Your cancellation kit is ready${est} in refunds at stake. We've matched each product to the company that handles it:`),
+      list,
+      cta("Open my kit", d.kitUrl),
+      paragraph(`<span style="color:#6b7a73;font-size:14px;">The link opens your kit on any device — no password.</span>`),
+    ];
+    text = [hi, "", `Your cancellation kit is ready${d.estimate ? ` — an estimated ${d.estimate} in refunds at stake` : ""}.`, ...d.products.map((p) => `- ${p}`), "", `Open my kit: ${d.kitUrl}`];
+  } else if (step === "shrinks") {
+    subject = d.fullRefundUntil ? `You may still get a full refund — until about ${d.fullRefundUntil}` : "Your refund gets smaller every month";
+    preheader = "Cancelling sooner means more money back.";
+    const lead = d.fullRefundUntil
+      ? `Your paperwork shows these were bought recently. Many contracts refund the <strong>whole price</strong> if you cancel within the first 30–60 days — for you that's until about <strong>${esc(d.fullRefundUntil)}</strong>.`
+      : "Refunds on these products are worked out from the time left on the contract. Every month you wait, the unused part — and your refund — gets smaller.";
+    body = [paragraph(hi), paragraph(lead), paragraph("Your kit has everything ready to start today."), cta("Open my kit", d.kitUrl)];
+    text = [hi, "", lead.replace(/<[^>]+>/g, ""), "", `Open my kit: ${d.kitUrl}`];
+  } else if (step === "how") {
+    subject = "What happens after you get your kit";
+    preheader = "The steps, and our money-back promise.";
+    body = [
+      paragraph(hi),
+      paragraph("Here's how it works once you unlock your kit:"),
+      `<ol style="margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">
+        <li style="margin-bottom:6px;">For each product, one first step — usually a quick call or the company's own form. We tell you exactly who and what to say.</li>
+        <li style="margin-bottom:6px;">Sign the letter we filled in. It's your dated, written request.</li>
+        <li>Most refunds arrive in 4–8 weeks.</li>
+      </ol>`,
+      paragraph("<strong>If no refund arrives within 120 days, email us and we'll give you your money back.</strong> And you can ask for a refund for any reason in the first 30 days."),
+      cta("Open my kit", d.kitUrl),
+    ];
+    text = [hi, "", "How it works: one first step per product (a call or their form), sign the letter we filled in, most refunds arrive in 4-8 weeks.", "If no refund arrives within 120 days, email us and we'll give you your money back.", "", `Open my kit: ${d.kitUrl}`];
+  } else if (step === "tip") {
+    const tips = d.firstSteps
+      .map((s) => {
+        const [label, method] = s.split(/:\s*/);
+        return METHOD_TIP[method] ? `<strong>${esc(label)}</strong> ${METHOD_TIP[method]}.` : null;
+      })
+      .filter(Boolean) as string[];
+    subject = "The step most people miss";
+    preheader = "Each product cancels a different way.";
+    body = [
+      paragraph(hi),
+      paragraph("The most common reason these refunds stall: people send a letter to the wrong place, or skip the company's own form. Each of your products cancels a different way:"),
+      tips.length
+        ? `<ul style="margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">${tips.map((t) => `<li style="margin-bottom:6px;">${t}</li>`).join("")}</ul>`
+        : "",
+      cta("Open my kit", d.kitUrl),
+    ];
+    text = [hi, "", "Each of your products cancels a different way:", ...tips.map((t) => `- ${t.replace(/<[^>]+>/g, "")}`), "", `Open my kit: ${d.kitUrl}`];
+  } else if (step === "offer" && d.offer) {
+    const o = d.offer;
+    subject = `30% off your cancellation kit — until ${o.expires}`;
+    preheader = `${o.price} instead of ${o.fullPrice}. Code ${o.code}.`;
+    body = [
+      paragraph(hi),
+      paragraph(`Here's 30% off your cancellation kit: <strong>${esc(o.price)}</strong> instead of ${esc(o.fullPrice)}${est ? `, with${est} at stake` : ""}.`),
+      paragraph(`Your code <strong>${esc(o.code)}</strong> is applied automatically from the button below. It's just for you and works until <strong>${esc(o.expires)}</strong>.`),
+      cta(`Get my kit for ${o.price}`, o.url),
+      paragraph(`<span style="color:#6b7a73;font-size:14px;">Still covered by our promise: no refund within 120 days, your money back.</span>`),
+    ];
+    text = [hi, "", `30% off your cancellation kit: ${o.price} instead of ${o.fullPrice}.`, `Code ${o.code} — works until ${o.expires}.`, "", `Get my kit: ${o.url}`];
+  }
+
+  return {
+    subject,
+    html: wrap({ preheader, bodyHtml: body.join(""), unsubscribeUrl: d.unsubscribeUrl }),
+    text: [...text, textFooter(d.unsubscribeUrl)].join("\n"),
+  };
 }

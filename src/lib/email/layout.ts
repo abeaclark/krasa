@@ -72,7 +72,7 @@ export function wrap(opts: {
         </p>
         ${
           opts.unsubscribeUrl
-            ? `<p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};"><a href="${opts.unsubscribeUrl}" style="color:${MUTED};">Unsubscribe from these check-ins</a></p>`
+            ? `<p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};"><a href="${opts.unsubscribeUrl}" style="color:${MUTED};">Unsubscribe from these emails</a></p>`
             : ""
         }
       </td></tr>
@@ -89,6 +89,6 @@ export function textFooter(unsubscribeUrl?: string): string {
     "—",
     `${EMAIL.legalName} · ${EMAIL.postalAddress}`,
     "Questions? Just reply to this email — it reaches a person.",
-    ...(unsubscribeUrl ? [`Unsubscribe from these check-ins: ${unsubscribeUrl}`] : []),
+    ...(unsubscribeUrl ? [`Unsubscribe from these emails: ${unsubscribeUrl}`] : []),
   ].join("\n");
 }

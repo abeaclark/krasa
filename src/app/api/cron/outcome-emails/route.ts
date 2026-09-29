@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
     // Already told us → stop asking. This is the point.
     if (meta.outcome) { skipped++; continue; }
     if (meta.emailUnsubscribedAt) { skipped++; continue; }
+    // Paying customers are never asked "did your refund come?" — the
+    // guarantee is theirs to use; we don't prompt it.
+    if (meta.purchase) { skipped++; continue; }
 
     const daysSince = (now - new Date(lettersSend.sentAt).getTime()) / 86400000;
     const already = (emails.outcomeSteps as number[] | undefined) ?? [];

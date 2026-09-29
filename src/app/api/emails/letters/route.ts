@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
     firstName,
     letters,
     linkDays: LINK_DAYS,
+    checkIn: !meta.purchase,
     kitUrl: kitToken ? `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}` : null,
   });
   const sent = await sendEmail({

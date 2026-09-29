@@ -18,13 +18,13 @@ const VEHICLE: Record<string, string> = {
 const LOAN: Record<string, string> = {
   "paid-off": "loan paid off", "refinanced-loan": "loan refinanced", "yes-active": "loan active", "not-sure": "loan ?",
 };
-const PRODUCT: Record<string, string> = {
+export const PRODUCT: Record<string, string> = {
   gap: "GAP", vsc: "VSC", maintenance: "Maintenance", "tire-wheel": "Tire & wheel", "key-replacement": "Key",
   "dent-protection": "Dent", windshield: "Windshield", "theft-vin": "Theft/VIN", "paint-appearance": "Paint", "not-sure": "Not sure",
 };
 
 /** "cancel-gs-administrators-refund" → "GS Administrators"-ish. */
-function slugName(slug: string): string {
+export function slugName(slug: string): string {
   if (slug === "dealer-in-house") return "dealer (in-house)";
   if (slug === "lender-direct") return "lender";
   if (slug === "not-sure") return "?";
@@ -91,6 +91,12 @@ function progress(lead: Lead): string {
   return steps.map(([l, ok]) => `${ok ? "✅" : "▫️"} ${l}`).join("  ");
 }
 
+function dripLine(m: Meta): string | null {
+  const d = ((m.emails as Meta | undefined)?.drip ?? null) as { sent?: { step: string }[]; offer?: { code?: string } } | null;
+  if (!d?.sent?.length) return null;
+  return `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}`;
+}
+
 export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): { text: string; blocks: unknown[] } {
   const m = (lead.meta ?? {}) as Meta;
   const { emoji, text } = refundAutoStatus(lead);
@@ -110,6 +116,7 @@ export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): 
     ["Dealer", dealer ?? null],
     ["Lender", str(m.lender)],
     ["Refund outcome", outcome ?? null],
+    ["Emails", dripLine(m)],
   ];
   const cells = fields.filter(([, v]) => v).slice(0, 10).map(([k, v]) => ({ type: "mrkdwn", text: `*${k}*\n${v}` }));
 
