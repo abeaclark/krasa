@@ -270,6 +270,8 @@ export interface DripData {
   kitUrl: string;
   unsubscribeUrl: string;
   offer?: { code: string; expires: string; url: string; price: string; fullPrice: string } | null;
+  /** False when they left before seeing their plan — the first email asks them to finish instead. */
+  hasPlan?: boolean;
 }
 
 const METHOD_TIP: Record<string, string> = {
@@ -288,14 +290,28 @@ export function dripEmail(step: import("./drip").DripStep, d: DripData) {
     ? `<ul style="margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;">${d.products.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`
     : "";
   const cta = (label: string, href: string) => `<div style="margin:0 0 16px;">${button({ label, href, primary: true })}</div>`;
-  const est = d.estimate ? ` — an estimated <strong>${esc(d.estimate)}</strong>` : "";
+  const est = d.estimate
+    ? d.estimate.startsWith("up to")
+      ? ` — <strong>${esc(d.estimate)}</strong>`
+      : ` — an estimated <strong>${esc(d.estimate)}</strong>`
+    : "";
 
   let subject = "";
   let preheader = "";
   let body: string[] = [];
   let text: string[] = [];
 
-  if (step === "ready") {
+  if (step === "ready" && d.hasPlan === false) {
+    subject = "Finish your refund check";
+    preheader = "You're a minute away from seeing who holds your refund.";
+    body = [
+      paragraph(hi),
+      paragraph(`You're almost done checking your refund${est ? `${est} could be at stake` : ""}. Pick up where you left off — it takes about a minute.`),
+      cta("Finish my refund check", d.kitUrl),
+      paragraph(`<span style="color:#6b7a73;font-size:14px;">The link opens your answers on any device — no password.</span>`),
+    ];
+    text = [hi, "", "You're almost done checking your refund. Pick up where you left off:", d.kitUrl];
+  } else if (step === "ready") {
     subject = "Your cancellation kit is ready";
     preheader = "Who to contact for each product, and your paperwork filled in.";
     body = [

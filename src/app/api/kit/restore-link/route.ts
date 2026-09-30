@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (!recent && token) {
       const msg = restoreEmail({
         firstName: (lead.name || "").trim().split(/\s+/)[0] || null,
-        url: `${EMAIL.origin}/restore?t=${encodeURIComponent(token)}`,
+        url: `${EMAIL.origin}/restore?t=${encodeURIComponent(token)}&utm_campaign=sign-in-link`,
         hours: LINK_HOURS,
       });
       const sent = await sendEmail({ to: lead.email, subject: msg.subject, html: msg.html, text: msg.text, leadId: lead.id });

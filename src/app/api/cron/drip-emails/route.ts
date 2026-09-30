@@ -14,7 +14,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BATCH_LIMIT = 50;
-const KIT_PRICE = 49;
+/** Keep in step with refundguy PRICING.letterKit.price. */
+const KIT_PRICE = 19;
 
 /**
  * Every 30 minutes: the "didn't pay" drip for RefundAuto (lib/email/drip.ts).
@@ -96,6 +97,7 @@ export async function GET(req: NextRequest) {
       firstSteps: ((meta.plan as { firstSteps?: string[] } | undefined)?.firstSteps ?? []).slice(0, 6),
       fullRefundUntil: fullRefundUntil(meta, now),
       kitUrl,
+      hasPlan: !!meta.plan,
       unsubscribeUrl: `${EMAIL.origin}/api/unsubscribe/${unsubToken}`,
       offer: offer
         ? {
@@ -160,6 +162,9 @@ function estimate(meta: Record<string, unknown>): string | null {
   const e = meta.estimateShown as { min?: number; max?: number } | undefined;
   if (e?.min == null || e?.max == null || e.max <= 0) return null;
   const f = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+  if (e.min >= e.max) return f(e.max);
+  // A range starting at $0 reads as made up (same rule as the site).
+  if (e.min <= 0 || e.min < e.max * 0.15) return `up to ${f(e.max)}`;
   return `${f(e.min)}–${f(e.max)}`;
 }
 

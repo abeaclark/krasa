@@ -42,13 +42,18 @@ export function refundAutoStatus(lead: Lead): { emoji: string; text: string } {
   const st = stages(m);
   const outcome = (m.outcome as { answer?: string } | undefined)?.answer;
   const purchase = m.purchase as { amount?: number } | undefined;
-  const plan = m.plan as { complete?: boolean } | undefined;
+  const plan = m.plan as { complete?: boolean; paywall?: boolean; freeReason?: string | null } | undefined;
   if (outcome === "received") return { emoji: "🎉", text: "Refund received" };
   if (outcome === "denied") return { emoji: "❌", text: "Refund denied" };
   if (purchase) return { emoji: "💰", text: `Paid ${money((purchase.amount ?? 4900) / 100) ?? "$49"}` };
   if (st.has("checkout-started")) return { emoji: "🛒", text: "At checkout — not paid" };
+  if (st.has("buy-clicked")) return { emoji: "🖱️", text: "Clicked buy — checkout didn't open" };
   if (st.has("letters-downloaded")) return { emoji: "⬇️", text: plan?.complete === false ? "Downloaded free kit" : "Downloaded kit" };
-  if (plan) return plan.complete ? { emoji: "🔒", text: "Saw $49 offer — not paid" } : { emoji: "🆓", text: "Free kit (contacts unconfirmed)" };
+  if (plan) {
+    if (plan.paywall ?? plan.complete) return { emoji: "🔒", text: "Saw paid offer — not paid" };
+    const why = plan.freeReason === "small" ? "small refund" : plan.freeReason === "claim" ? "GAP claim" : "contacts unconfirmed";
+    return { emoji: "🆓", text: `Free kit (${why})` };
+  }
   if (st.has("paperwork-details")) return { emoji: "📝", text: "Filled in details" };
   return { emoji: "👀", text: "Contact captured" };
 }
@@ -84,6 +89,7 @@ function progress(lead: Lead): string {
     ["Contact", true],
     ["Details", st.has("paperwork-details")],
     ["Plan", !!m.plan || st.has("letters-downloaded")],
+    ["Clicked buy", st.has("buy-clicked") || st.has("checkout-started") || !!m.purchase],
     ["Checkout", st.has("checkout-started") || !!m.purchase],
     ["Paid", !!m.purchase],
     ["Downloaded", st.has("letters-downloaded")],
@@ -93,8 +99,11 @@ function progress(lead: Lead): string {
 
 function dripLine(m: Meta): string | null {
   const d = ((m.emails as Meta | undefined)?.drip ?? null) as { sent?: { step: string }[]; offer?: { code?: string } } | null;
-  if (!d?.sent?.length) return null;
-  return `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}`;
+  const click = (m.lastEmailClick as { campaign?: string } | undefined)?.campaign;
+  if (!d?.sent?.length && !click) return null;
+  return [d?.sent?.length ? `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}` : null, click ? `Came back via ${click}` : null]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): { text: string; blocks: unknown[] } {

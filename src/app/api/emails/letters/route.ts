@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     letters,
     linkDays: LINK_DAYS,
     checkIn: !meta.purchase,
-    kitUrl: kitToken ? `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}` : null,
+    kitUrl: kitToken ? `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}&utm_campaign=letters-email` : null,
   });
   const sent = await sendEmail({
     to: lead.email,

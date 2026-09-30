@@ -1,7 +1,7 @@
 /**
  * RefundAuto "didn't pay" drip.
  *
- * Who: people who saw a CONFIRMED cancellation kit (the $49 offer) and
+ * Who: people who saw a CONFIRMED cancellation kit (the paid offer) and
  * haven't paid. People whose kit was free get nothing from here (their kit
  * cost nothing to finish), and paying customers are never emailed by this
  * sequence — or by the refund check-ins (see outcome-emails).
@@ -84,13 +84,18 @@ export function dueDripStep(opts: {
   if (meta.hasProducts === "no") return { skip: "no products" };
 
   const stages = new Set((Array.isArray(meta._stages) ? (meta._stages as { stage?: string }[]) : []).map((s) => s.stage));
-  const plan = meta.plan as { complete?: boolean } | undefined;
+  const plan = meta.plan as { complete?: boolean; paywall?: boolean } | undefined;
+  const est = meta.estimateShown as { max?: number } | undefined;
+  const firstSteps = ((meta.plan as { firstSteps?: string[] } | undefined)?.firstSteps ?? []).join(" ");
   const { sent } = dripState(meta);
   const last = lastActivity(meta, opts.createdAt);
   const t = now.getTime();
 
-  // Free kit, or they already downloaded one: nothing to sell.
-  if (plan && !plan.complete) return { skip: "free kit" };
+  // Free kit (unconfirmed contacts, small refund, or a GAP claim), or they
+  // already downloaded one: nothing to sell.
+  if (plan && (plan.paywall === false || !plan.complete)) return { skip: "free kit" };
+  if (typeof est?.max === "number" && est.max < 300) return { skip: "small refund" };
+  if (/:\s*claim\b/.test(firstSteps)) return { skip: "GAP claim" };
   if (stages.has("letters-downloaded") && !plan?.complete) return { skip: "downloaded" };
 
   if (sent.length === 0) {
