@@ -45,7 +45,7 @@ export function refundAutoStatus(lead: Lead): { emoji: string; text: string } {
   const plan = m.plan as { complete?: boolean; paywall?: boolean; freeReason?: string | null } | undefined;
   if (outcome === "received") return { emoji: "🎉", text: "Refund received" };
   if (outcome === "denied") return { emoji: "❌", text: "Refund denied" };
-  if (purchase) return { emoji: "💰", text: `Paid ${money((purchase.amount ?? 4900) / 100) ?? "$49"}` };
+  if (purchase) return { emoji: "💰", text: `Paid ${money((purchase.amount ?? 1900) / 100) ?? "$19"}` };
   if (st.has("checkout-started")) return { emoji: "🛒", text: "At checkout — not paid" };
   if (st.has("buy-clicked")) return { emoji: "🖱️", text: "Clicked buy — checkout didn't open" };
   if (st.has("letters-downloaded")) return { emoji: "⬇️", text: plan?.complete === false ? "Downloaded free kit" : "Downloaded kit" };
