@@ -51,7 +51,7 @@ export function refundAutoStatus(lead: Lead): { emoji: string; text: string } {
   if (st.has("letters-downloaded")) return { emoji: "⬇️", text: plan?.complete === false ? "Downloaded free kit" : "Downloaded kit" };
   if (plan) {
     if (plan.paywall ?? plan.complete) return { emoji: "🔒", text: "Saw paid offer — not paid" };
-    const why = plan.freeReason === "small" ? "small refund" : plan.freeReason === "claim" ? "GAP claim" : plan.freeReason === "contract" ? "contract says no refund" : "contacts unconfirmed";
+    const why = plan.freeReason === "small" ? "small refund" : plan.freeReason === "claim" ? "GAP claim" : plan.freeReason === "contract" ? "contract says no refund" : plan.freeReason === "records" ? "records request only" : "contacts unconfirmed";
     return { emoji: "🆓", text: `Free kit (${why})` };
   }
   if (st.has("paperwork-details")) return { emoji: "📝", text: "Filled in details" };
