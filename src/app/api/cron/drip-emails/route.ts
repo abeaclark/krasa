@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { leads } from "@/db/schema";
 import { sendEmail } from "@/lib/email/client";
-import { dripEmail } from "@/lib/email/templates";
-import { dueDripStep, dripState, OFFER_HOURS, type DripStep } from "@/lib/email/drip";
+import { dripEmail, paperworkEmail } from "@/lib/email/templates";
+import { dueDripStep, dripState, duePaperworkStep, paperState, OFFER_HOURS, type DripStep } from "@/lib/email/drip";
 import { EMAIL } from "@/lib/email/config";
 import { createToken, tokensConfigured } from "@/lib/email/tokens";
 import { refreshLeadCard } from "@/lib/slack";
@@ -18,7 +18,8 @@ const BATCH_LIMIT = 50;
 const KIT_PRICE = 19;
 
 /**
- * Every 30 minutes: the "didn't pay" drip for RefundAuto (lib/email/drip.ts).
+ * Every 30 minutes: the "didn't pay" drip for RefundAuto, and the "get your
+ * paperwork" reminders for people with no kit yet (lib/email/drip.ts).
  *
  *   GET /api/cron/drip-emails   (Vercel cron, Bearer CRON_SECRET)
  */
@@ -71,6 +72,13 @@ export async function GET(req: NextRequest) {
     const meta = (lead.meta ?? {}) as Record<string, unknown>;
     const decision = dueDripStep({ meta, createdAt: new Date(lead.created_at), hasEmail: !!lead.email, now });
     if ("skip" in decision) {
+      // Nothing to sell them — but maybe they're waiting on their paperwork.
+      const paper = duePaperworkStep({ meta, createdAt: new Date(lead.created_at), hasEmail: !!lead.email, now });
+      if ("step" in paper) {
+        const ok = await sendPaperworkReminder(lead, meta, paper.step, now, failures);
+        if (ok) sent++;
+        continue;
+      }
       skipped[decision.skip] = (skipped[decision.skip] ?? 0) + 1;
       continue;
     }
@@ -138,6 +146,44 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, sent, skipped, failures });
+}
+
+/** One "get your paperwork" reminder; records it on the lead and refreshes the Slack card. */
+async function sendPaperworkReminder(
+  lead: typeof leads.$inferSelect,
+  meta: Record<string, unknown>,
+  step: import("@/lib/email/drip").PaperStep,
+  now: Date,
+  failures: string[],
+): Promise<boolean> {
+  const token = createToken(lead.id, "restore", 7);
+  const unsubToken = createToken(lead.id, "unsubscribe");
+  if (!token || !unsubToken) return false;
+  const plan = meta.plan as { paperworkWaiting?: string[] } | undefined;
+  const dealer = ((meta.docFacts as { dealer?: { name?: string; phone?: string | null } | null } | undefined)?.dealer ??
+    (meta.dealer as { name?: string; phone?: string | null } | undefined)) ?? null;
+  const msg = paperworkEmail(step, {
+    firstName: (lead.name || "").trim().split(/\s+/)[0] || null,
+    estimate: estimate(meta),
+    products: plan?.paperworkWaiting ?? [],
+    dealerName: dealer?.name ?? null,
+    dealerPhone: dealer?.phone ?? null,
+    uploadUrl: `${EMAIL.origin}/restore?t=${encodeURIComponent(token)}&next=upload&utm_source=email&utm_campaign=${step}`,
+    unsubscribeUrl: `${EMAIL.origin}/api/unsubscribe/${unsubToken}`,
+  });
+  const res = await sendEmail({ to: lead.email!, subject: msg.subject, html: msg.html, text: msg.text, leadId: lead.id, unsubscribable: true });
+  if (!res.ok) {
+    failures.push(`${lead.id}: ${res.error ?? "unknown"}`);
+    return false;
+  }
+  const emails = (meta.emails ?? {}) as Record<string, unknown>;
+  const nextMeta = {
+    ...meta,
+    emails: { ...emails, paperwork: { sent: [...paperState(meta).sent, { step, at: now.toISOString() }] } },
+  };
+  await db.update(leads).set({ meta: nextMeta, updated_at: now }).where(eq(leads.id, lead.id));
+  await refreshLeadCard({ ...lead, meta: nextMeta });
+  return true;
 }
 
 /** Ask refundauto.com (which holds the Stripe key) for a single-use 30% code. */

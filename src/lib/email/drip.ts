@@ -117,3 +117,61 @@ export function dueDripStep(opts: {
   if (h < SEND_HOURS[0] || h >= SEND_HOURS[1]) return { skip: "outside send hours" };
   return { step: next };
 }
+
+// ---------------------------------------------------------------------------
+// "Get your paperwork" reminders.
+//
+// People who reached their plan without paperwork, where we couldn't place
+// any product without it, get no kit — they get help getting their contract
+// and a way back in to upload it (refundguy ActionPlan.paperwork). These
+// three emails bring them back. Separate from the paid-offer drip above:
+// those people have nothing to buy yet.
+// ---------------------------------------------------------------------------
+
+export type PaperStep = "paper1" | "paper2" | "paper3";
+export const PAPER_STEPS: PaperStep[] = ["paper1", "paper2", "paper3"];
+/** Quiet time before each: after their last action, then after the previous email. */
+const PAPER_WAIT_MS = [18 * 3600_000, 2 * 86400_000, 4 * 86400_000];
+
+export function paperState(meta: Meta): { sent: { step: PaperStep; at: string }[] } {
+  const p = ((meta.emails as Meta | undefined)?.paperwork ?? {}) as { sent?: { step: PaperStep; at: string }[] };
+  return { sent: Array.isArray(p.sent) ? p.sent : [] };
+}
+
+const GENERATED_DOC = /(cancellation-let|records-request|claim-notice)[^/]*\.pdf$/i;
+
+/** They've uploaded their own paperwork (our letter PDFs don't count). */
+export function hasOwnPaperwork(meta: Meta): boolean {
+  if (meta.docFacts) return true;
+  const docs = Array.isArray(meta.documents) ? (meta.documents as { name?: string; path?: string }[]) : [];
+  return docs.some((d) => !GENERATED_DOC.test(d.name ?? "") && !GENERATED_DOC.test(d.path ?? ""));
+}
+
+export type PaperDecision = { step: PaperStep } | { skip: string };
+
+export function duePaperworkStep(opts: { meta: Meta; createdAt: Date; hasEmail: boolean; now: Date }): PaperDecision {
+  const { meta, now } = opts;
+  if (!opts.hasEmail) return { skip: "no email" };
+  if (meta.purchase) return { skip: "paid" };
+  if (meta.emailUnsubscribedAt) return { skip: "unsubscribed" };
+  const plan = meta.plan as { letters?: number; paperworkWaiting?: string[] } | undefined;
+  // Only plans built since the paperwork step shipped carry paperworkWaiting.
+  if (!plan?.paperworkWaiting?.length) return { skip: "not waiting on paperwork" };
+  if ((plan.letters ?? 0) > 0) return { skip: "has a kit" };
+  if (hasOwnPaperwork(meta)) return { skip: "uploaded" };
+
+  const { sent } = paperState(meta);
+  const t = now.getTime();
+  const next = PAPER_STEPS[sent.length];
+  if (!next) return { skip: "done" };
+  if (sent.length === 0) {
+    if (t - opts.createdAt.getTime() > MAX_START_AGE_MS) return { skip: "too old to start" };
+    if (t - lastActivity(meta, opts.createdAt) < PAPER_WAIT_MS[0]) return { skip: "waiting" };
+  } else {
+    if (t - Date.parse(sent[sent.length - 1].at) < PAPER_WAIT_MS[sent.length]) return { skip: "waiting" };
+    if (t - lastActivity(meta, opts.createdAt) < FIRST_AFTER_MS) return { skip: "still active" };
+  }
+  const h = localHour(meta.state, now);
+  if (h < SEND_HOURS[0] || h >= SEND_HOURS[1]) return { skip: "outside send hours" };
+  return { step: next };
+}

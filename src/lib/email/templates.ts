@@ -383,3 +383,88 @@ export function dripEmail(step: import("./drip").DripStep, d: DripData) {
     text: [...text, textFooter(d.unsubscribeUrl)].join("\n"),
   };
 }
+
+// ---------------------------------------------------------------------------
+// 5. "Get your paperwork" reminders (lib/email/drip.ts duePaperworkStep)
+// ---------------------------------------------------------------------------
+
+export interface PaperworkData {
+  firstName?: string | null;
+  estimate?: string | null;
+  /** What's waiting on the paperwork, e.g. ["GAP coverage", "Extended warranty (VSC)"]; empty when unknown. */
+  products: string[];
+  dealerName?: string | null;
+  dealerPhone?: string | null;
+  /** Signs them in and opens the upload step. */
+  uploadUrl: string;
+  unsubscribeUrl: string;
+}
+
+const UL = `margin:0 0 16px;padding-left:20px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3d4a44;`;
+
+export function paperworkEmail(step: import("./drip").PaperStep, d: PaperworkData) {
+  const hi = d.firstName ? `Hi ${esc(d.firstName)},` : "Hi,";
+  // "Extended warranty (VSC)" → "extended warranty"; "GAP coverage" keeps its capitals.
+  const what = d.products
+    .filter((p) => !/records request/i.test(p))
+    .flatMap((p) => p.split(/\s*\+\s*/))
+    .map((p) => p.replace(/\s*\(.*?\)/g, "").replace(/^(?!GAP)./, (c) => c.toLowerCase()));
+  const yours = what.length ? (what.length === 1 ? `your ${what[0]}` : `your ${what.slice(0, -1).join(", ")} and ${what.at(-1)}`) : "your add-ons";
+  const at = d.estimate ? (d.estimate.startsWith("up to") ? ` (${esc(d.estimate)})` : ` (an estimated ${esc(d.estimate)})`) : "";
+  const dealer = d.dealerName ? esc(d.dealerName) : "the dealership";
+  const phone = d.dealerPhone ? ` at ${esc(d.dealerPhone)}` : "";
+  const cta = `<div style="margin:0 0 16px;">${button({ label: "Upload my paperwork", href: d.uploadUrl, primary: true })}</div>`;
+  const note = paragraph(`<span style="color:#6b7a73;font-size:14px;">A phone photo of the right page is enough. The link signs you in on any device — no password.</span>`);
+
+  let subject = "";
+  let preheader = "";
+  let body: string[] = [];
+  let text: string[] = [];
+
+  if (step === "paper1") {
+    subject = "Found your car paperwork yet?";
+    preheader = "One page tells us who holds your refund.";
+    const where = [
+      `Search your email for <strong>DocuSign</strong>, <strong>RouteOne</strong>, <strong>Dealertrack</strong> or ${d.dealerName ? `<strong>${dealer}</strong>` : "the dealership's name"}.`,
+      "Log in to your lender's website or app — look under Documents.",
+      `Or call ${dealer}'s finance office${phone} and ask them to email you copies of everything you signed.`,
+    ];
+    body = [
+      paragraph(hi),
+      paragraph(`To finish your cancellation kit for ${esc(yours)}${at}, we need your contract — it names the company that holds your refund. The quickest ways to find it:`),
+      `<ul style="${UL}">${where.map((w) => `<li style="margin-bottom:6px;">${w}</li>`).join("")}</ul>`,
+      cta,
+      note,
+    ];
+    text = [hi, "", `To finish your cancellation kit for ${yours}, we need your contract. Quickest ways to find it:`, `- Search your email for DocuSign, RouteOne, Dealertrack or ${d.dealerName ?? "the dealership's name"}.`, "- Log in to your lender's website or app (Documents).", `- Or call ${d.dealerName ?? "the dealership"}'s finance office${d.dealerPhone ? ` at ${d.dealerPhone}` : ""} and ask for copies.`, "", `Upload my paperwork: ${d.uploadUrl}`];
+  } else if (step === "paper2") {
+    subject = "If the dealer hasn't sent your contracts";
+    preheader = "What to say so they email them today.";
+    const say = `Hi, I bought a car from you and need copies of everything I signed — the finance contract and the add-on contracts. Can you email them to me today?`;
+    body = [
+      paragraph(hi),
+      paragraph(`Dealers sometimes sit on these requests. Ask for the <strong>finance (F&amp;I) office</strong> or <strong>accounting</strong>${phone ? ` — ${dealer}${phone}` : ""} — and say:`),
+      `<blockquote style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #d9d9d3;background:#f6f6f3;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1d2a24;">${esc(say)}</blockquote>`,
+      paragraph("If they stall, the written request in your kit puts it on the record. As soon as you have the pages, upload them:"),
+      cta,
+      note,
+    ];
+    text = [hi, "", "Dealers sometimes sit on these requests. Call the finance (F&I) office or accounting and say:", `"${say}"`, "", "If they stall, send the written request from your kit.", "", `Upload my paperwork: ${d.uploadUrl}`];
+  } else {
+    subject = "Your refund is waiting on one page";
+    preheader = "Refunds shrink every month the contract runs.";
+    body = [
+      paragraph(hi),
+      paragraph(`Last reminder from us: your refund on ${esc(yours)}${at} is waiting on one page of your contract. These refunds are worked out from the time left on the contract, so they get a little smaller every month.`),
+      cta,
+      note,
+    ];
+    text = [hi, "", `Last reminder: your refund on ${yours} is waiting on one page of your contract. Refunds get smaller every month.`, "", `Upload my paperwork: ${d.uploadUrl}`];
+  }
+
+  return {
+    subject,
+    html: wrap({ preheader, bodyHtml: body.join(""), unsubscribeUrl: d.unsubscribeUrl }),
+    text: [...text, textFooter(d.unsubscribeUrl)].join("\n"),
+  };
+}

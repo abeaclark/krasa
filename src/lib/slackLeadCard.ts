@@ -1,4 +1,5 @@
 import type { Lead } from "@/db/schema";
+import { hasOwnPaperwork } from "@/lib/email/drip";
 
 /**
  * RefundAuto's lead card: ONE Slack message per lead that is edited in place
@@ -42,13 +43,17 @@ export function refundAutoStatus(lead: Lead): { emoji: string; text: string } {
   const st = stages(m);
   const outcome = (m.outcome as { answer?: string } | undefined)?.answer;
   const purchase = m.purchase as { amount?: number } | undefined;
-  const plan = m.plan as { complete?: boolean; paywall?: boolean; freeReason?: string | null } | undefined;
+  const plan = m.plan as { complete?: boolean; paywall?: boolean; freeReason?: string | null; letters?: number; paperworkWaiting?: string[] } | undefined;
   if (outcome === "received") return { emoji: "🎉", text: "Refund received" };
   if (outcome === "denied") return { emoji: "❌", text: "Refund denied" };
   if (purchase) return { emoji: "💰", text: `Paid ${money((purchase.amount ?? 1900) / 100) ?? "$19"}` };
   if (st.has("checkout-started")) return { emoji: "🛒", text: "At checkout — not paid" };
   if (st.has("buy-clicked")) return { emoji: "🖱️", text: "Clicked buy — checkout didn't open" };
   if (st.has("letters-downloaded")) return { emoji: "⬇️", text: plan?.complete === false ? "Downloaded free kit" : "Downloaded kit" };
+  // No kit yet: we're waiting on their contract (refundguy "get your paperwork").
+  if (plan?.paperworkWaiting?.length && !plan.letters) {
+    return hasOwnPaperwork(m) ? { emoji: "📄", text: "Uploaded paperwork — rebuilding kit" } : { emoji: "📭", text: "Waiting on paperwork" };
+  }
   if (plan) {
     if (plan.paywall ?? plan.complete) return { emoji: "🔒", text: "Saw paid offer — not paid" };
     const why = plan.freeReason === "small" ? "small refund" : plan.freeReason === "claim" ? "GAP claim" : plan.freeReason === "contract" ? "contract says no refund" : plan.freeReason === "records" ? "records request only" : "contacts unconfirmed";
@@ -99,9 +104,14 @@ function progress(lead: Lead): string {
 
 function dripLine(m: Meta): string | null {
   const d = ((m.emails as Meta | undefined)?.drip ?? null) as { sent?: { step: string }[]; offer?: { code?: string } } | null;
+  const p = ((m.emails as Meta | undefined)?.paperwork ?? null) as { sent?: { step: string }[] } | null;
   const click = (m.lastEmailClick as { campaign?: string } | undefined)?.campaign;
-  if (!d?.sent?.length && !click) return null;
-  return [d?.sent?.length ? `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}` : null, click ? `Came back via ${click}` : null]
+  if (!d?.sent?.length && !p?.sent?.length && !click) return null;
+  return [
+    d?.sent?.length ? `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}` : null,
+    p?.sent?.length ? `Paperwork reminders ${p.sent.length}/3 sent` : null,
+    click ? `Came back via ${click}` : null,
+  ]
     .filter(Boolean)
     .join("\n");
 }
@@ -111,7 +121,7 @@ export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): 
   const { emoji, text } = refundAutoStatus(lead);
   const who = lead.name || lead.email || `lead ${lead.id.slice(0, 8)}`;
   const est = m.estimateShown as { min?: number; max?: number } | undefined;
-  const plan = m.plan as { complete?: boolean; letters?: number; unverified?: number } | undefined;
+  const plan = m.plan as { complete?: boolean; letters?: number; unverified?: number; paperworkWaiting?: string[] } | undefined;
   const dealer = (m.docFacts as { dealer?: { name?: string } | null } | undefined)?.dealer?.name ?? (m.dealer as { name?: string } | undefined)?.name;
   const outcome = (m.outcome as { answer?: string } | undefined)?.answer;
 
@@ -120,7 +130,8 @@ export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): 
     ["Situation", [VEHICLE[str(m.vehicleStatus) ?? ""], LOAN[str(m.loanStatus) ?? ""], str(m.state)].filter(Boolean).join(" · ") || null],
     ["Products", products(m)],
     ["Paperwork", [paperwork(m), dashboardLink].filter(Boolean).join("\n") || null],
-    ["Kit", plan ? (plan.complete ? `Confirmed (${plan.letters ?? "?"} products)` : `Free — ${plan.unverified ?? "?"} unconfirmed`) : null],
+    ["Kit", plan ? (!plan.letters && plan.paperworkWaiting?.length ? "None yet" : plan.complete ? `Confirmed (${plan.letters ?? "?"} products)` : `Free — ${plan.unverified ?? "?"} unconfirmed`) : null],
+    ["Waiting on paperwork", plan?.paperworkWaiting?.length ? plan.paperworkWaiting.join("\n") : null],
     ["Contact", [lead.email, lead.phone].filter(Boolean).join("\n") || null],
     ["Dealer", dealer ?? null],
     ["Lender", str(m.lender)],
