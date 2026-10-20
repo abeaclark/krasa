@@ -36,6 +36,7 @@ export const SITES = [
   "localservicegroup.com",
   "refundauto.com",
   "sunlightkids.com",
+  "lessonsupply.com",
 ] as const;
 
 export type SiteT = (typeof SITES)[number];

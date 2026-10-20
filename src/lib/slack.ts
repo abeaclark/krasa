@@ -7,7 +7,9 @@ import { buildRefundAutoCard, LOUD_STAGES } from "./slackLeadCard";
  * Two transports, picked automatically:
  *
  *  1. Bot token (preferred): set SLACK_BOT_TOKEN (xoxb-…) and
- *     SLACK_LEADS_CHANNEL (channel ID, e.g. C0123456789). New leads post via
+ *     SLACK_LEADS_CHANNEL (channel ID, e.g. C0123456789 — the catch-all). New
+ *     leads are routed to a per-site channel (see SITE_CHANNELS) and fall back
+ *     to the catch-all for sites without one. New leads post via
  *     chat.postMessage, which returns the message `ts` — we hand that back to
  *     the caller to store on the lead, and every subsequent update posts as a
  *     REPLY IN THE SAME THREAD. This is what keeps the channel quiet.
@@ -31,14 +33,45 @@ interface SlackPayload {
   blocks?: unknown[];
 }
 
-function botConfig(): { token: string; channel: string } | null {
+/** Catch-all channel: any site without its own channel lands here. */
+const DEFAULT_CHANNEL = "leads";
+
+/**
+ * Which channel each site's leads go to. Sites not listed (krasadev.com, any
+ * future site) fall through to the catch-all.
+ *
+ * Values are channel names; Slack accepts a name or an ID for chat.postMessage.
+ * To pin one to a channel ID (survives renames), set the env override, e.g.
+ * SLACK_CHANNEL_REFUNDAUTO_COM=C0123456789. The bot must be invited to each
+ * channel (/invite @bot) or Slack returns not_in_channel.
+ */
+const SITE_CHANNELS: Record<string, string> = {
+  "krasa.ai": "krasa-ai",
+  "localservicegroup.com": "local-service-group",
+  "lessonsupply.com": "lesson-supply",
+  "refundauto.com": "refund-auto",
+  "sunlightkids.com": "sunlight",
+};
+
+/** Resolve the channel for a site: env override → mapped channel → catch-all. */
+export function channelForSite(site: string): string {
+  const envKey = `SLACK_CHANNEL_${site.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+  return (
+    process.env[envKey]?.trim() ||
+    SITE_CHANNELS[site] ||
+    process.env.SLACK_LEADS_CHANNEL?.trim() ||
+    DEFAULT_CHANNEL
+  );
+}
+
+function botConfig(): { token: string } | null {
   const token = process.env.SLACK_BOT_TOKEN;
-  const channel = process.env.SLACK_LEADS_CHANNEL;
-  return token && channel ? { token, channel } : null;
+  return token ? { token } : null;
 }
 
 /** Post via chat.postMessage; returns the message ref (needed for threading). */
 async function postViaBot(
+  channel: string,
   payload: SlackPayload,
   threadTs?: string,
   broadcast = false,
@@ -53,7 +86,7 @@ async function postViaBot(
         Authorization: `Bearer ${cfg.token}`,
       },
       body: JSON.stringify({
-        channel: cfg.channel,
+        channel,
         ...payload,
         ...(threadTs ? { thread_ts: threadTs, ...(broadcast ? { reply_broadcast: true } : {}) } : {}),
       }),
@@ -332,7 +365,11 @@ export async function notifySlackNewLead(
   lead: Lead,
 ): Promise<SlackMessageRef | null> {
   const payload = CARD_SITES.has(lead.site) ? cardPayload(lead) : buildNewLeadPayload(lead);
-  const ref = await postViaBot(payload);
+  const channel = channelForSite(lead.site);
+  let ref = await postViaBot(channel, payload);
+  // Channel missing / bot not invited: don't lose the lead, use the catch-all.
+  const fallback = process.env.SLACK_LEADS_CHANNEL?.trim() || DEFAULT_CHANNEL;
+  if (!ref && channel !== fallback) ref = await postViaBot(fallback, payload);
   if (ref) return ref;
   await postViaWebhook(payload);
   return null;
@@ -355,17 +392,17 @@ export async function notifySlackLeadUpdate(
     const loud = stage ? LOUD_STAGES[stage] : undefined;
     if (loud) {
       const who = lead.name || lead.email || "lead";
-      await postViaBot({ text: `${loud.text} — ${who}` }, parent.ts, loud.broadcast);
+      await postViaBot(parent.channel, { text: `${loud.text} — ${who}` }, parent.ts, loud.broadcast);
     }
     return;
   }
   const payload = buildUpdatePayload(lead, stage, changedMeta);
   if (parent && botConfig()) {
-    const ref = await postViaBot(payload, parent.ts);
+    const ref = await postViaBot(parent.channel, payload, parent.ts);
     if (ref) return;
   }
   // Fallback: bot without a stored parent, or webhook-only setups.
-  const ref = await postViaBot(payload);
+  const ref = await postViaBot(channelForSite(lead.site), payload);
   if (!ref) await postViaWebhook(payload);
 }
 
@@ -383,5 +420,5 @@ export async function refreshLeadCard(lead: Lead, reply?: { text: string; broadc
   const ref = ((lead.meta ?? {}) as Record<string, unknown>)._slack as SlackMessageRef | undefined;
   if (!CARD_SITES.has(lead.site) || !ref || !botConfig()) return;
   await updateViaBot(ref, cardPayload(lead));
-  if (reply) await postViaBot({ text: reply.text }, ref.ts, reply.broadcast);
+  if (reply) await postViaBot(ref.channel, { text: reply.text }, ref.ts, reply.broadcast);
 }

@@ -7,7 +7,7 @@ Lives in the **krasadev** repo (Next.js, deployed at **krasadev.com**), backed b
 Sheets / Google Forms flow.
 
 Sites served: `krasadev.com`, `krasa.ai`, `localservicegroup.com`,
-`refundauto.com`, `sunlightkids.com`.
+`refundauto.com`, `sunlightkids.com`, `lessonsupply.com`.
 
 ## How it fits together
 
@@ -159,6 +159,7 @@ pre-set to its own `site` and pointed at `https://www.krasadev.com/api/leads`
 - **krasa.ai** — consultation page (`src/app/consultation/page.tsx`)
 - **refundauto.com** — funnel contact step (`src/components/form/StepPage.tsx`), full funnel context sent as `meta`; also uploads purchase paperwork via the signed-URL flow above
 - **sunlightkids.com** — new `ContactForm` on `/contact`
+- **lessonsupply.com** — server-side: new account sign-ups (`/api/auth/email-link`) post a lead via `src/lib/leads.ts` in the lessonsupply repo
 
 To add another form: `import { submitLead } from "@/lib/leads"` and call it with
 `{ source, name, email, phone, message, meta }`.
@@ -176,6 +177,13 @@ no migration needed since it's a plain varchar.
 
 ## Notes
 
+- **Slack routing (bot transport):** each site's leads post to its own channel —
+  `krasa.ai` → #krasa-ai, `localservicegroup.com` → #local-service-group, `lessonsupply.com` → #lesson-supply,
+  `refundauto.com` → #refund-auto, `sunlightkids.com` → #sunlight. Anything else
+  (e.g. `krasadev.com`) goes to the catch-all #leads (`SLACK_LEADS_CHANNEL`).
+  Edit `SITE_CHANNELS` in `src/lib/slack.ts` to change the map; the bot must be
+  invited to every channel. Threaded updates stay in the original channel. The
+  webhook fallback is single-channel and ignores this routing.
 - Slack failures never fail lead capture (the row is already stored).
 - The honeypot (`hp`) silently drops obvious bots; flip the handler in
   `src/app/api/leads/route.ts` if you'd rather store them as `status: "spam"`.
