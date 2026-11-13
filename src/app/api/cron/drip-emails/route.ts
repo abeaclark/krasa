@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { leads } from "@/db/schema";
 import { sendEmail } from "@/lib/email/client";
-import { dripEmail, paperworkEmail } from "@/lib/email/templates";
-import { dueDripStep, dripState, duePaperworkStep, paperState, OFFER_HOURS, type DripStep } from "@/lib/email/drip";
+import { dripEmail, paperworkEmail, checkoutEmail } from "@/lib/email/templates";
+import { dueDripStep, dripState, duePaperworkStep, paperState, dueCheckoutEmail, subjectVariant, OFFER_HOURS, EARLY_OFFER_HOURS, dripPercentOff, reusableDripOffer, type DripOffer, type DripStep } from "@/lib/email/drip";
 import { EMAIL } from "@/lib/email/config";
 import { createToken, tokensConfigured } from "@/lib/email/tokens";
 import { refreshLeadCard } from "@/lib/slack";
@@ -18,8 +18,9 @@ const BATCH_LIMIT = 50;
 const KIT_PRICE = 19;
 
 /**
- * Every 30 minutes: the "didn't pay" drip for RefundAuto, and the "get your
- * paperwork" reminders for people with no kit yet (lib/email/drip.ts).
+ * Every 30 minutes: the "didn't pay" drip for RefundAuto, one
+ * abandoned-checkout email, and the
+ * "get your paperwork" reminders for people with no kit yet (lib/email/drip.ts).
  *
  *   GET /api/cron/drip-emails   (Vercel cron, Bearer CRON_SECRET)
  */
@@ -70,6 +71,11 @@ export async function GET(req: NextRequest) {
   for (const lead of candidates) {
     if (sent >= BATCH_LIMIT) break;
     const meta = (lead.meta ?? {}) as Record<string, unknown>;
+    // Clicked buy and didn't pay: one reminder, in place of the drip's next email.
+    if ("send" in dueCheckoutEmail({ meta, createdAt: new Date(lead.created_at), hasEmail: !!lead.email, now })) {
+      if (await sendCheckoutEmail(lead, meta, now, failures)) sent++;
+      continue;
+    }
     const decision = dueDripStep({ meta, createdAt: new Date(lead.created_at), hasEmail: !!lead.email, now });
     if ("skip" in decision) {
       // Nothing to sell them — but maybe they're waiting on their paperwork.
@@ -87,15 +93,14 @@ export async function GET(req: NextRequest) {
     const kitToken = createToken(lead.id, "restore", 7);
     const unsubToken = createToken(lead.id, "unsubscribe");
     if (!kitToken || !unsubToken) continue;
-    const kitUrl = `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}&utm_source=email&utm_campaign=drip-${step}`;
+    const variant = subjectVariant(lead.id);
+    const kitUrl = `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}&utm_source=email&utm_campaign=drip-${step}-${variant}`;
 
-    let offer: { code: string; expiresAt: string } | null = null;
-    if (step === "offer") {
-      offer = await mintOffer(lead.id, lead.email!);
-      if (!offer) {
-        failures.push(`${lead.id}: offer code`);
-        continue; // try again next run
-      }
+    const previous = dripState(meta).offer;
+    const offer = reusableDripOffer(previous, step, now) ? previous! : await mintOffer(lead.id, dripPercentOff(step), step === "offer" ? OFFER_HOURS : EARLY_OFFER_HOURS);
+    if (!offer) {
+      failures.push(`${lead.id}: offer code`);
+      continue;
     }
 
     const msg = dripEmail(step, {
@@ -106,18 +111,21 @@ export async function GET(req: NextRequest) {
       fullRefundUntil: fullRefundUntil(meta, now),
       kitUrl,
       hasPlan: !!meta.plan,
+      variant,
       unsubscribeUrl: `${EMAIL.origin}/api/unsubscribe/${unsubToken}`,
       offer: offer
         ? {
             code: offer.code,
+            percentOff: offer.percentOff!,
             expires: formatDate(new Date(offer.expiresAt)),
             url: `${kitUrl}&offer=${encodeURIComponent(offer.code)}`,
-            price: `$${(KIT_PRICE * 0.7).toFixed(2)}`,
+            price: `$${(KIT_PRICE * (1 - offer.percentOff! / 100)).toFixed(2)}`,
             fullPrice: `$${KIT_PRICE}`,
           }
         : null,
     });
 
+    if (!(await canSendMarketing(lead, failures))) continue;
     const res = await sendEmail({
       to: lead.email!,
       subject: msg.subject,
@@ -137,15 +145,48 @@ export async function GET(req: NextRequest) {
       ...meta,
       emails: {
         ...emails,
-        drip: { sent: [...drip.sent, { step, at: now.toISOString() }], offer: offer ?? drip.offer ?? null },
+        drip: { sent: [...drip.sent, { step, at: now.toISOString(), variant }], offer: offer ?? drip.offer ?? null },
       },
     };
-    await db.update(leads).set({ meta: nextMeta, updated_at: now }).where(eq(leads.id, lead.id));
-    await refreshLeadCard({ ...lead, meta: nextMeta });
+    await recordEmails(lead, { drip: nextMeta.emails.drip }, now);
     sent++;
   }
 
   return NextResponse.json({ ok: true, sent, skipped, failures });
+}
+
+/** The one "it may be easier than you think" email; records it on the lead and refreshes the Slack card. */
+async function sendCheckoutEmail(
+  lead: typeof leads.$inferSelect,
+  meta: Record<string, unknown>,
+  now: Date,
+  failures: string[],
+): Promise<boolean> {
+  const kitToken = createToken(lead.id, "restore", 7);
+  const unsubToken = createToken(lead.id, "unsubscribe");
+  if (!kitToken || !unsubToken) return false;
+  const msg = checkoutEmail({
+    firstName: (lead.name || "").trim().split(/\s+/)[0] || null,
+    estimate: estimate(meta),
+    products: productLines(meta),
+    price: `$${KIT_PRICE}`,
+    kitUrl: `${EMAIL.origin}/restore?t=${encodeURIComponent(kitToken)}&utm_source=email&utm_campaign=checkout-abandon`,
+    unsubscribeUrl: `${EMAIL.origin}/api/unsubscribe/${unsubToken}`,
+  });
+  // Re-checks Stripe: never email someone whose payment went through.
+  if (!(await canSendMarketing(lead, failures))) return false;
+  const res = await sendEmail({ to: lead.email!, subject: msg.subject, html: msg.html, text: msg.text, leadId: lead.id, unsubscribable: true });
+  if (!res.ok) {
+    failures.push(`${lead.id}: ${res.error ?? "unknown"}`);
+    return false;
+  }
+  const drip = dripState(meta);
+  const at = now.toISOString();
+  await recordEmails(lead, {
+    checkout: { at },
+    drip: { sent: drip.sent.length ? drip.sent : [{ step: "ready", at }], offer: drip.offer ?? null },
+  }, now);
+  return true;
 }
 
 /** One "get your paperwork" reminder; records it on the lead and refreshes the Slack card. */
@@ -171,6 +212,7 @@ async function sendPaperworkReminder(
     uploadUrl: `${EMAIL.origin}/restore?t=${encodeURIComponent(token)}&next=upload&utm_source=email&utm_campaign=${step}`,
     unsubscribeUrl: `${EMAIL.origin}/api/unsubscribe/${unsubToken}`,
   });
+  if (!(await canSendMarketing(lead, failures))) return false;
   const res = await sendEmail({ to: lead.email!, subject: msg.subject, html: msg.html, text: msg.text, leadId: lead.id, unsubscribable: true });
   if (!res.ok) {
     failures.push(`${lead.id}: ${res.error ?? "unknown"}`);
@@ -181,27 +223,60 @@ async function sendPaperworkReminder(
     ...meta,
     emails: { ...emails, paperwork: { sent: [...paperState(meta).sent, { step, at: now.toISOString() }] } },
   };
-  await db.update(leads).set({ meta: nextMeta, updated_at: now }).where(eq(leads.id, lead.id));
-  await refreshLeadCard({ ...lead, meta: nextMeta });
+  await recordEmails(lead, { paperwork: nextMeta.emails.paperwork }, now);
   return true;
 }
 
-/** Ask refundauto.com (which holds the Stripe key) for a single-use 30% code. */
-async function mintOffer(leadId: string, email: string): Promise<{ code: string; expiresAt: string } | null> {
+/** Ask refundauto.com (which holds the Stripe key) for a single-use code. */
+async function mintOffer(leadId: string, percentOff: 20 | 50, hours: number): Promise<DripOffer | null> {
   const secret = process.env.INTERNAL_API_SECRET?.trim();
   if (!secret) return null;
   try {
     const res = await fetch(process.env.KIT_PROMO_ENDPOINT || `${EMAIL.origin}/api/internal/promo`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-      body: JSON.stringify({ leadId, email, percentOff: 30, hours: OFFER_HOURS }),
+      body: JSON.stringify({ leadId, percentOff, hours }),
+      signal: AbortSignal.timeout(10000),
     });
     const data = (await res.json()) as { ok?: boolean; code?: string; expiresAt?: string };
-    return data.ok && data.code && data.expiresAt ? { code: data.code, expiresAt: data.expiresAt } : null;
+    return data.ok && data.code && data.expiresAt ? { code: data.code, expiresAt: data.expiresAt, percentOff } : null;
   } catch (err) {
     console.error("[drip] promo mint failed", err);
     return null;
   }
+}
+
+/** Stop even if the buyer closed Stripe before our browser callback recorded the sale.
+ * Fail closed: a payment-service outage postpones marketing rather than mailing buyers. */
+async function canSendMarketing(lead: typeof leads.$inferSelect, failures: string[]): Promise<boolean> {
+  const [blocked] = await db.select({ id: leads.id }).from(leads).where(sql`${leads.site} = 'refundauto.com' and (${leads.id} = ${lead.id} or lower(trim(${leads.email})) = ${lead.email!.trim().toLowerCase()}) and (${leads.meta} ? 'purchase' or ${leads.meta} ? 'emailUnsubscribedAt')`).limit(1);
+  if (blocked) return false;
+  const secret = process.env.INTERNAL_API_SECRET?.trim();
+  if (!secret) { failures.push(`${lead.id}: payment check not configured`); return false; }
+  try {
+    const res = await fetch(`${EMAIL.origin}/api/internal/payment-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ leadId: lead.id, email: lead.email }),
+      signal: AbortSignal.timeout(10000),
+      cache: "no-store",
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok || typeof data.paid !== "boolean") throw new Error("payment check failed");
+    return !data.paid;
+  } catch {
+    failures.push(`${lead.id}: payment check failed; email postponed`);
+    return false;
+  }
+}
+
+/** Merge into the current row: concurrent payment/unsubscribe writes must survive. */
+async function recordEmails(lead: typeof leads.$inferSelect, patch: Record<string, unknown>, now: Date) {
+  const [updated] = await db.update(leads).set({
+    meta: sql`jsonb_set(${leads.meta}, '{emails}', coalesce(${leads.meta}->'emails', '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb)`,
+    updated_at: now,
+  }).where(eq(leads.id, lead.id)).returning();
+  if (updated) await refreshLeadCard(updated);
 }
 
 function estimate(meta: Record<string, unknown>): string | null {

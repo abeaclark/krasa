@@ -14,7 +14,28 @@
  */
 
 export type DripStep = "ready" | "shrinks" | "how" | "tip" | "offer";
-export const DRIP_STEPS: DripStep[] = ["ready", "shrinks", "how", "tip", "offer"];
+/**
+ * The live sequence. Cut from five emails to three on 2026-10-31: over Sep 29 –
+ * Oct 29, 116 people got "ready" (14 clicked, 2 bought), and "shrinks", "how",
+ * "tip" and "offer" drew 0–1 clicks and no sales each. "how" and "tip" stay in
+ * the type (and templates) only because older leads have them in `sent`.
+ */
+export const DRIP_STEPS: DripStep[] = ["ready", "shrinks", "offer"];
+/** Gap after the previous email, per step (the final offer waits longer). */
+export const STEP_GAP_MS: Partial<Record<DripStep, number>> = { shrinks: 20 * 3600_000, offer: 44 * 3600_000 };
+
+/**
+ * Subject-line test. Each person gets one variant for the whole sequence
+ * (a = discount-led, b = their own refund-led), stable by lead id, recorded
+ * on every `sent` entry and in the link's utm_campaign (drip-ready-b, …) so
+ * clicks and sales can be split by variant.
+ */
+export type SubjectVariant = "a" | "b";
+export function subjectVariant(leadId: string): SubjectVariant {
+  let h = 0;
+  for (const c of leadId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h % 2 === 0 ? "a" : "b";
+}
 
 /** Minimum quiet time after their last action before the first email. */
 export const FIRST_AFTER_MS = 30 * 60_000;
@@ -22,8 +43,16 @@ export const FIRST_AFTER_MS = 30 * 60_000;
 export const GAP_MS = 20 * 3600_000;
 /** …and only between these local hours. */
 export const SEND_HOURS: [number, number] = [9, 20];
-/** How long the 30% code works. */
+/** Early offer covers the sequence; the final offer has its own 72-hour window. */
+export const EARLY_OFFER_HOURS = 7 * 24;
 export const OFFER_HOURS = 72;
+export const dripPercentOff = (step: DripStep): 20 | 50 => step === "offer" ? 50 : 20;
+export interface DripOffer { code: string; expiresAt: string; percentOff?: number }
+
+/** Reuse a live code across reminders; replace legacy offers and upgrade the last email. */
+export function reusableDripOffer(offer: DripOffer | null | undefined, step: DripStep, now: Date): boolean {
+  return !!offer && offer.percentOff === dripPercentOff(step) && Date.parse(offer.expiresAt) > now.getTime();
+}
 /** Don't start a drip for leads older than this (no surprise emails to old leads). */
 export const MAX_START_AGE_MS = 3 * 86400_000;
 /**
@@ -35,8 +64,8 @@ export const DRIP_LAUNCH = Date.parse("2026-09-28T23:00:00Z");
 type Meta = Record<string, unknown>;
 
 export interface DripState {
-  sent: { step: DripStep; at: string }[];
-  offer?: { code: string; expiresAt: string } | null;
+  sent: { step: DripStep; at: string; variant?: SubjectVariant }[];
+  offer?: DripOffer | null;
 }
 
 export function dripState(meta: Meta): DripState {
@@ -99,6 +128,8 @@ export function dueDripStep(opts: {
   if (stages.has("letters-downloaded") && !plan?.complete) return { skip: "downloaded" };
 
   if (sent.length === 0) {
+    // Started checkout and left: the abandoned-checkout email goes instead of "ready".
+    if (checkoutPending(meta, now)) return { skip: "checkout email pending" };
     if (t - opts.createdAt.getTime() > MAX_START_AGE_MS) return { skip: "too old to start" };
     if (t - last < FIRST_AFTER_MS) return { skip: "still active" };
     return { step: "ready" };
@@ -107,10 +138,14 @@ export function dueDripStep(opts: {
   // Never saw a confirmed plan: the single "your kit is ready" is all they get.
   if (!plan?.complete) return { skip: "no confirmed plan" };
 
-  const next = DRIP_STEPS[sent.length];
+  // First live step not yet sent (people mid-sequence when it was cut skip
+  // straight from wherever they are to the next live step).
+  const done = new Set(sent.map((s) => s.step));
+  const next = DRIP_STEPS.find((s) => !done.has(s));
   if (!next) return { skip: "done" };
-  const prevAt = Date.parse(sent[sent.length - 1].at);
-  if (t - prevAt < GAP_MS) return { skip: "waiting" };
+  // The "easier than you think" and abandoned-checkout emails count as the previous email.
+  const prevAt = Math.max(Date.parse(sent[sent.length - 1].at), dfySentAt(meta) ?? 0, checkoutSentAt(meta) ?? 0);
+  if (t - prevAt < (STEP_GAP_MS[next] ?? GAP_MS)) return { skip: "waiting" };
   // They came back since our last email: give them the quiet period again.
   if (t - last < FIRST_AFTER_MS) return { skip: "still active" };
   const h = localHour(meta.state, now);
@@ -165,6 +200,8 @@ export function duePaperworkStep(opts: { meta: Meta; createdAt: Date; hasEmail: 
   const next = PAPER_STEPS[sent.length];
   if (!next) return { skip: "done" };
   if (sent.length === 0) {
+    // Started checkout and left: the abandoned-checkout email goes instead of "ready".
+    if (checkoutPending(meta, now)) return { skip: "checkout email pending" };
     if (t - opts.createdAt.getTime() > MAX_START_AGE_MS) return { skip: "too old to start" };
     if (t - lastActivity(meta, opts.createdAt) < PAPER_WAIT_MS[0]) return { skip: "waiting" };
   } else {
@@ -174,4 +211,105 @@ export function duePaperworkStep(opts: { meta: Meta; createdAt: Date; hasEmail: 
   const h = localHour(meta.state, now);
   if (h < SEND_HOURS[0] || h >= SEND_HOURS[1]) return { skip: "outside send hours" };
   return { step: next };
+}
+
+// ---------------------------------------------------------------------------
+// "It may be easier than you think" — one email to people who picked
+// Done for you.
+//
+// We'd rather not do the work by hand, so the follow-up to a done-for-you
+// click is the cancellation kit: what each of their products takes (usually
+// one call or one form) and the kit at a fraction of the price. Anyone who
+// still wants us to handle it can reply — the offer stays real.
+//
+// Sent once, after a short quiet period, in their daytime. Counts as the
+// drip's "ready" email, so they never get both back to back.
+// ---------------------------------------------------------------------------
+
+export const DFY_STAGES = ["done-for-you-clicked", "done-for-you-requested"];
+/** Don't follow up on a done-for-you click older than this. */
+export const DFY_MAX_AGE_MS = 7 * 86400_000;
+/** Quiet time after their last action — they may still be buying on the page. */
+export const DFY_AFTER_MS = 20 * 60_000;
+
+export function dfySentAt(meta: Meta): number | null {
+  const at = ((meta.emails as Meta | undefined)?.dfy as { at?: string } | undefined)?.at;
+  return at ? Date.parse(at) : null;
+}
+
+export type DfyDecision = { send: true } | { skip: string };
+
+export function dueDfyEmail(opts: { meta: Meta; createdAt: Date; hasEmail: boolean; now: Date }): DfyDecision {
+  const { meta, now } = opts;
+  const stages = Array.isArray(meta._stages) ? (meta._stages as { stage?: string; at?: string }[]) : [];
+  const clicked = stages.filter((s) => s.stage && DFY_STAGES.includes(s.stage)).map((s) => (s.at ? Date.parse(s.at) : 0));
+  if (!clicked.length) return { skip: "no done-for-you click" };
+  if (!opts.hasEmail) return { skip: "no email" };
+  if (meta.purchase) return { skip: "paid" };
+  if (meta.emailUnsubscribedAt) return { skip: "unsubscribed" };
+  if (dfySentAt(meta) != null) return { skip: "dfy sent" };
+  const t = now.getTime();
+  if (t - Math.max(...clicked) > DFY_MAX_AGE_MS) return { skip: "dfy too old" };
+  if (t - lastActivity(meta, opts.createdAt) < DFY_AFTER_MS) return { skip: "still active" };
+  const h = localHour(meta.state, now);
+  if (h < SEND_HOURS[0] || h >= SEND_HOURS[1]) return { skip: "outside send hours" };
+  return { send: true };
+}
+
+// ---------------------------------------------------------------------------
+// Abandoned checkout — one email to people who clicked buy (or reached
+// Stripe) and didn't pay.
+//
+// Sent once per person, ever, after a 45-minute quiet period, in their
+// daytime, within 48 hours of the click. No discount: they were already
+// willing at full price, and a discount here teaches people to abandon.
+// It stands in for the drip's "ready" email when the drip hasn't started, and
+// counts as the previous email otherwise, so nobody gets two back to back;
+// it also waits if any of our emails went out in the last 4 hours.
+// The cron re-checks Stripe (canSendMarketing) before sending, so a buyer who
+// closed the Stripe tab before we recorded the sale is never emailed.
+// ---------------------------------------------------------------------------
+
+export const CHECKOUT_STAGES = ["buy-clicked", "checkout-started"];
+export const CHECKOUT_AFTER_MS = 45 * 60_000;
+export const CHECKOUT_MAX_AGE_MS = 48 * 3600_000;
+/** Don't follow another of our emails this closely. */
+export const CHECKOUT_MIN_GAP_MS = 4 * 3600_000;
+
+export function checkoutSentAt(meta: Meta): number | null {
+  const at = ((meta.emails as Meta | undefined)?.checkout as { at?: string } | undefined)?.at;
+  return at ? Date.parse(at) : null;
+}
+
+function lastCheckoutClick(meta: Meta): number | null {
+  const stages = Array.isArray(meta._stages) ? (meta._stages as { stage?: string; at?: string }[]) : [];
+  const ts = stages.filter((s) => s.stage && CHECKOUT_STAGES.includes(s.stage) && s.at).map((s) => Date.parse(s.at!));
+  return ts.length ? Math.max(...ts) : null;
+}
+
+/** An abandoned-checkout email is still owed (or will be, once they've been quiet long enough). */
+export function checkoutPending(meta: Meta, now: Date): boolean {
+  const clicked = lastCheckoutClick(meta);
+  return clicked != null && !meta.purchase && !meta.emailUnsubscribedAt && checkoutSentAt(meta) == null && now.getTime() - clicked <= CHECKOUT_MAX_AGE_MS;
+}
+
+export type CheckoutDecision = { send: true } | { skip: string };
+
+export function dueCheckoutEmail(opts: { meta: Meta; createdAt: Date; hasEmail: boolean; now: Date }): CheckoutDecision {
+  const { meta, now } = opts;
+  const clicked = lastCheckoutClick(meta);
+  if (clicked == null) return { skip: "no checkout" };
+  if (!opts.hasEmail) return { skip: "no email" };
+  if (meta.purchase) return { skip: "paid" };
+  if (meta.emailUnsubscribedAt) return { skip: "unsubscribed" };
+  if (checkoutSentAt(meta) != null) return { skip: "checkout sent" };
+  const t = now.getTime();
+  if (t - clicked > CHECKOUT_MAX_AGE_MS) return { skip: "checkout too old" };
+  if (t - lastActivity(meta, opts.createdAt) < CHECKOUT_AFTER_MS) return { skip: "still active" };
+  const sent = dripState(meta).sent;
+  const lastEmail = Math.max(sent.length ? Date.parse(sent[sent.length - 1].at) : 0, dfySentAt(meta) ?? 0);
+  if (t - lastEmail < CHECKOUT_MIN_GAP_MS) return { skip: "recent email" };
+  const h = localHour(meta.state, now);
+  if (h < SEND_HOURS[0] || h >= SEND_HOURS[1]) return { skip: "outside send hours" };
+  return { send: true };
 }

@@ -106,9 +106,14 @@ function dripLine(m: Meta): string | null {
   const d = ((m.emails as Meta | undefined)?.drip ?? null) as { sent?: { step: string }[]; offer?: { code?: string } } | null;
   const p = ((m.emails as Meta | undefined)?.paperwork ?? null) as { sent?: { step: string }[] } | null;
   const click = (m.lastEmailClick as { campaign?: string } | undefined)?.campaign;
-  if (!d?.sent?.length && !p?.sent?.length && !click) return null;
+  const dfy = !!(m.emails as Meta | undefined)?.dfy;
+  const checkout = !!(m.emails as Meta | undefined)?.checkout;
+  if (!d?.sent?.length && !p?.sent?.length && !click && !dfy && !checkout) return null;
+  const variant = (d?.sent as { variant?: string }[] | undefined)?.find((x) => x.variant)?.variant;
   return [
-    d?.sent?.length ? `Drip ${d.sent.length}/5 sent${d.offer?.code ? ` · code ${d.offer.code}` : ""}` : null,
+    dfy ? "Sent \"easier than you think\" (picked Done for you)" : null,
+    checkout ? "Sent abandoned-checkout reminder" : null,
+    d?.sent?.length ? `Drip ${d.sent.length} sent${variant ? ` · subjects ${variant.toUpperCase()}` : ""}${d.offer?.code ? ` · code ${d.offer.code}` : ""}` : null,
     p?.sent?.length ? `Paperwork reminders ${p.sent.length}/3 sent` : null,
     click ? `Came back via ${click}` : null,
   ]
@@ -147,7 +152,7 @@ export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): 
       { type: "context", elements: [{ type: "mrkdwn", text: progress(lead) }] },
       ...(cells.length ? [{ type: "section", fields: cells }] : []),
       ...(m.doneForYouRequested || stages(m).has("done-for-you-requested")
-        ? [{ type: "section", text: { type: "mrkdwn", text: "🙋 *Asked about Done for you* — follow up by email" } }]
+        ? [{ type: "section", text: { type: "mrkdwn", text: "🙋 *Still wants Done for you* (after the \"easier than you think\" screen) — they get the kit email automatically; reply if they write back" } }]
         : []),
       {
         type: "context",
@@ -160,7 +165,8 @@ export function buildRefundAutoCard(lead: Lead, dashboardLink?: string | null): 
 /** Stages worth a reply in the thread (and a ping). Everything else just edits the card. */
 export const LOUD_STAGES: Record<string, { text: string; broadcast?: boolean }> = {
   "kit-purchased": { text: "💰 Paid for the cancellation kit", broadcast: true },
-  "done-for-you-requested": { text: "🙋 Asked about Done for you", broadcast: true },
+  "done-for-you-requested": { text: "🙋 Still wants Done for you after seeing the kit pitch", broadcast: true },
+  "done-for-you-clicked": { text: "👀 Clicked Done for you — shown \"easier than you think\"" },
   "checkout-started": { text: "🛒 Opened checkout" },
   "letters-downloaded": { text: "⬇️ Downloaded their kit" },
 };
