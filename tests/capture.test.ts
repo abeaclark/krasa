@@ -9,7 +9,8 @@ import { answer, assign, event, subscribe, unsubscribe, type SendFn } from "@/li
 import { buildRewardEmail } from "@/lib/email/reward";
 import { brandFor, brandUrl, brandForFrom, BRANDS } from "@/lib/email/brands";
 import { buildDigest } from "@/lib/capture/digest";
-import { statusForEvent, verifySvix } from "@/lib/capture/resendWebhook";
+import { statusForEvent, verifySvix, verifySvixAny, webhookSecrets } from "@/lib/capture/resendWebhook";
+import { resendKeyFor } from "@/lib/email/brandSend";
 import { SITES } from "@/lib/enums";
 
 // Fake addresses only — nothing here reaches Resend, Slack or a database.
@@ -272,6 +273,28 @@ test("reward emails escape what sites send", () => {
     marketing: true,
   });
   assert.doesNotMatch(mail.html, /<script>/);
+});
+
+test("resend: a brand's own account key wins, else the default key", () => {
+  const env = { RESEND_API_KEY: "re_main", RESEND_API_KEY_SOLVEDPARTY: " re_other ", RESEND_API_KEY_SUNDAY101: "" };
+  assert.deepEqual(resendKeyFor("solvedparty.com", env), { key: "re_other", envName: "RESEND_API_KEY_SOLVEDPARTY" });
+  assert.equal(resendKeyFor("sunday101.com", env).key, "re_main"); // empty override falls back
+  assert.equal(resendKeyFor("sunlightkids.com", env).key, "re_main");
+  assert.equal(resendKeyFor("sunlightkids.com", {}).key, null);
+});
+
+test("resend webhook: any of several account secrets verifies", () => {
+  const a = Buffer.from("account-a-key");
+  const b = Buffer.from("account-b-key");
+  const payload = JSON.stringify({ type: "email.complained" });
+  const ts = String(Math.floor(NOW.getTime() / 1000));
+  const sig = createHmac("sha256", b).update(`msg_2.${ts}.${payload}`).digest("base64");
+  const h = { id: "msg_2", timestamp: ts, signature: `v1,${sig}` };
+  const secrets = webhookSecrets(` whsec_${a.toString("base64")} , whsec_${b.toString("base64")},`);
+  assert.equal(secrets.length, 2);
+  assert.equal(verifySvixAny(secrets, h, payload, NOW.getTime()), true);
+  assert.equal(verifySvixAny(secrets.slice(0, 1), h, payload, NOW.getTime()), false);
+  assert.equal(verifySvixAny([], h, payload, NOW.getTime()), false);
 });
 
 test("nothing in the capture code touches leads, the drip, or lead Slack pings", () => {

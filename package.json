@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "db:pull": "drizzle-kit pull",
     "db:migrate": "drizzle-kit migrate",
+    "db:baseline": "node scripts/db-baseline.mjs",
     "test:email": "node scripts/test-email.mjs",
     "test": "tsx --test tests/*.test.ts"
   },

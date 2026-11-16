@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgStore } from "@/lib/capture/pgStore";
-import { statusForEvent, verifySvix } from "@/lib/capture/resendWebhook";
+import { statusForEvent, verifySvixAny, webhookSecrets } from "@/lib/capture/resendWebhook";
 import { brandForFrom } from "@/lib/email/brands";
 import { normEmail } from "@/lib/capture/core";
 
@@ -10,16 +10,17 @@ export const dynamic = "force-dynamic";
 /**
  * Resend webhook: `email.bounced` → subscriber `bounced`, `email.complained`
  * → `complained`. Only the `subscribers` table is updated; leads are never
- * read or written. Requires RESEND_WEBHOOK_SECRET (the signing secret Resend
- * shows when the webhook is created) — without it every call is refused.
+ * read or written. Requires RESEND_WEBHOOK_SECRET: the signing secret Resend
+ * shows when the webhook is created, comma-separated when more than one Resend
+ * account points a webhook here. Without it every call is refused.
  */
 export async function POST(req: NextRequest) {
-  const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
-  if (!secret) return NextResponse.json({ ok: false, error: "Webhook is not configured" }, { status: 503 });
+  const secrets = webhookSecrets(process.env.RESEND_WEBHOOK_SECRET);
+  if (!secrets.length) return NextResponse.json({ ok: false, error: "Webhook is not configured" }, { status: 503 });
 
   const raw = await req.text();
-  const ok = verifySvix(
-    secret,
+  const ok = verifySvixAny(
+    secrets,
     {
       id: req.headers.get("svix-id"),
       timestamp: req.headers.get("svix-timestamp"),

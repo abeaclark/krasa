@@ -32,6 +32,11 @@ does neither. `tests/capture.test.ts` fails if capture code references leads.
 - An unsubscribed address that signs up again is reactivated (new consent).
 - Code emails state the expiry as an exact local time in the subscriber's time
   zone (fallback Pacific/Honolulu) and never mention later prices or cancelling.
+- Brands can sit in different Resend accounts: `RESEND_API_KEY_<NAME>`
+  (`RESEND_API_KEY_SOLVEDPARTY`, `RESEND_API_KEY_SUNDAY101`, …) overrides
+  `RESEND_API_KEY` for that brand. Each account gets its own webhook to
+  `/api/webhooks/resend`; `RESEND_WEBHOOK_SECRET` lists their secrets
+  comma-separated.
 - The token is random and stored on the row (no `EMAIL_TOKEN_SECRET` needed).
 
 ## Code
@@ -41,7 +46,7 @@ does neither. `tests/capture.test.ts` fails if capture code references leads.
 - `src/lib/capture/store.ts` / `pgStore.ts` — in-memory (tests) / Postgres
 - `src/lib/email/brands.ts` — sender, reply-to, color, origin, address per brand
 - `src/lib/email/reward.ts` — code / download / list templates
-- `supabase/0005_email_capture.sql` — tables (RLS on, no policies)
+- `src/db/migrations/0001_email_capture.sql` — tables (RLS on, no policies); `supabase/0005` is the same SQL, kept as history
 
 ## Tests
 
@@ -50,9 +55,14 @@ database, no Resend, no Slack, fake addresses only.
 
 ## Before production
 
-1. Run `supabase/0005_email_capture.sql` in the Supabase SQL editor.
+1. Once: `ENV_FILE=.env.production pnpm db:baseline` (dry run), then with
+   `--apply`. Then `ENV_FILE=.env.production pnpm db:migrate` creates the three
+   tables (`src/db/migrations/0001_email_capture.sql`).
 2. Verify `mail.<domain>` in Resend for each brand (records in the hand-off note).
 3. Set `CAPTURE_REPORT_SECRET`, `CAPTURE_PROXY_SECRET`, `RESEND_WEBHOOK_SECRET`
-   (and optionally `SLACK_CAPTURE_CHANNEL`) in Vercel; add the Resend webhook.
+   (and optionally `SLACK_CAPTURE_CHANNEL`) in Vercel; add the Resend webhook
+   in every Resend account that sends popup mail. Set
+   `RESEND_API_KEY_SOLVEDPARTY` / `RESEND_API_KEY_SUNDAY101` to a key from
+   their account.
 4. Confirm reply-to mailboxes in `brands.ts` exist (`hello@<domain>`;
    RefundAuto uses `support@refundauto.com`).

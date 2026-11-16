@@ -2,6 +2,28 @@ import type { Brand } from "./brands";
 import type { SendResult } from "./client";
 
 /**
+ * Brands can live in different Resend accounts (a domain is verified in exactly
+ * one). Each brand uses `RESEND_API_KEY_<NAME>` when it is set — NAME is the
+ * domain's first label, upper-cased: RESEND_API_KEY_SOLVEDPARTY,
+ * RESEND_API_KEY_SUNDAY101, RESEND_API_KEY_SUNLIGHTKIDS — and falls back to
+ * RESEND_API_KEY otherwise. Two brands in the same second account just get the
+ * same key value.
+ */
+export function resendKeyEnvName(site: string): string {
+  return `RESEND_API_KEY_${site.split(".")[0].toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+}
+
+export function resendKeyFor(
+  site: string,
+  env: Record<string, string | undefined> = process.env,
+): { key: string | null; envName: string } {
+  const own = resendKeyEnvName(site);
+  const ownKey = env[own]?.trim();
+  if (ownKey) return { key: ownKey, envName: own };
+  return { key: env.RESEND_API_KEY?.trim() || null, envName: `${own} / RESEND_API_KEY` };
+}
+
+/**
  * Resend over fetch, for brand mail (popup rewards). Same approach as
  * client.ts, but the sender, reply-to and one-click unsubscribe target come
  * from the brand instead of the single RefundAuto identity. Never throws.
@@ -15,9 +37,9 @@ export async function sendBrandEmail(opts: {
   /** Adds the RFC 8058 one-click header (Gmail/Yahoo require it on bulk mail). */
   unsubscribeUrl: string;
 }): Promise<SendResult> {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const { key, envName } = resendKeyFor(opts.brand.site);
   if (!key) {
-    console.warn("[capture] RESEND_API_KEY not set — skipping send");
+    console.warn(`[capture] ${envName} not set — skipping send`);
     return { ok: false, skipped: true, error: "Email is not configured" };
   }
   try {

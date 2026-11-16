@@ -6,7 +6,9 @@
 -- Only this server talks to these tables (postgres connection / service role);
 -- RLS is ON with no policies, so the anon key can read nothing.
 --
--- Apply via the Supabase SQL editor (or `npm run db:push`).
+-- Superseded by src/db/migrations/0001_email_capture.sql: apply with
+-- `pnpm db:migrate`. Kept as history. If this file was already run by hand,
+-- `pnpm db:baseline --apply` records 0001 as applied too.
 
 create extension if not exists "pgcrypto"; -- for gen_random_uuid()
 

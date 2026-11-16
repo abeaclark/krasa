@@ -12,6 +12,8 @@ import {
   date,
   primaryKey,
   uniqueIndex,
+  bigserial,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { InferSelectModel, InferInsertModel, sql } from "drizzle-orm";
 import type { LeadStatusT } from "@/lib/enums";
@@ -109,6 +111,74 @@ export type Heartbeat = InferSelectModel<typeof heartbeats>;
 export type NewHeartbeat = InferInsertModel<typeof heartbeats>;
 
 /**
+ * sk_orders / sk_download_events — Sunlight Kids "Download & Print" orders.
+ *
+ * Created by supabase/0003 + 0004 and used only by sunlightkids.com's server
+ * (service-role key); Krasa's code never reads them. They're modelled here so
+ * drizzle-kit knows they exist and never offers to drop them. The trigger,
+ * the sk_claim_download() function and the grants from 0003 stay as they are:
+ * drizzle doesn't manage those. Constraint names match what Postgres gave the
+ * hand-written SQL, so the schema and the live database agree.
+ */
+export const skOrders = pgTable(
+  "sk_orders",
+  {
+    id: uuid("id")
+      .default(sql`gen_random_uuid()`)
+      .primaryKey(),
+    book_id: text("book_id").notNull(),
+    title: text("title").notNull(),
+    name: text("name"), // filled from Stripe on payment (0004)
+    email: text("email"), // filled from Stripe on payment (0004)
+    marketing_opt_in: boolean("marketing_opt_in").default(false).notNull(),
+    amount_cents: integer("amount_cents").notNull(),
+    currency: text("currency").default("usd").notNull(),
+    /** pending | paid | refunded | disputed | expired */
+    status: text("status").default("pending").notNull(),
+    stripe_session_id: text("stripe_session_id").unique("sk_orders_stripe_session_id_key"),
+    stripe_payment_intent: text("stripe_payment_intent"),
+    token_hash: text("token_hash").unique("sk_orders_token_hash_key"),
+    expires_at: timestamp("expires_at", { withTimezone: true }),
+    max_downloads: integer("max_downloads").default(10).notNull(),
+    download_count: integer("download_count").default(0).notNull(),
+    last_download_at: timestamp("last_download_at", { withTimezone: true }),
+    email_sent_at: timestamp("email_sent_at", { withTimezone: true }),
+    resend_requested_at: timestamp("resend_requested_at", { withTimezone: true }),
+    revoked_at: timestamp("revoked_at", { withTimezone: true }),
+    paid_at: timestamp("paid_at", { withTimezone: true }),
+    meta: jsonb("meta")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("sk_orders_email_idx").on(sql`lower(${t.email})`),
+    index("sk_orders_status_idx").on(t.status),
+    index("sk_orders_pi_idx").on(t.stripe_payment_intent),
+  ],
+).enableRLS();
+
+export const skDownloadEvents = pgTable(
+  "sk_download_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    order_id: uuid("order_id").notNull(),
+    ip_hash: text("ip_hash"),
+    user_agent: text("user_agent"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "sk_download_events_order_id_fkey",
+      columns: [t.order_id],
+      foreignColumns: [skOrders.id],
+    }).onDelete("cascade"),
+    index("sk_download_events_order_idx").on(t.order_id),
+  ],
+).enableRLS();
+
+/**
  * subscribers — the marketing list behind the email-capture popup.
  *
  * Deliberately NOT the `leads` table: the RefundAuto drip cron emails every
@@ -160,7 +230,7 @@ export const subscribers = pgTable(
     uniqueIndex("subscribers_token_key").on(t.token),
     index("subscribers_email_idx").on(t.email),
   ],
-);
+).enableRLS();
 
 export type Subscriber = InferSelectModel<typeof subscribers>;
 export type NewSubscriber = InferInsertModel<typeof subscribers>;
@@ -180,7 +250,7 @@ export const captureStatsDaily = pgTable(
     signups: integer("signups").default(0).notNull(),
   },
   (t) => [primaryKey({ columns: [t.site, t.offer_id, t.device, t.day] })],
-);
+).enableRLS();
 
 /** capture_assign — the round-robin counter per (site, offer). */
 export const captureAssign = pgTable(
@@ -191,4 +261,4 @@ export const captureAssign = pgTable(
     n: bigint("n", { mode: "number" }).default(0).notNull(),
   },
   (t) => [primaryKey({ columns: [t.site, t.offer_id] })],
-);
+).enableRLS();

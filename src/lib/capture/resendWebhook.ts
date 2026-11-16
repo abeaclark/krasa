@@ -25,6 +25,23 @@ export function verifySvix(
   });
 }
 
+/**
+ * One webhook per Resend account, each with its own signing secret. The env
+ * var holds them comma-separated; a call is good if any of them verifies it.
+ */
+export function webhookSecrets(raw: string | undefined): string[] {
+  return (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+export function verifySvixAny(
+  secrets: string[],
+  headers: { id: string | null; timestamp: string | null; signature: string | null },
+  body: string,
+  nowMs = Date.now(),
+): boolean {
+  return secrets.some((s) => verifySvix(s, headers, body, nowMs));
+}
+
 /** What a Resend event means for the subscriber list, if anything. */
 export function statusForEvent(type: unknown): "bounced" | "complained" | null {
   if (type === "email.bounced") return "bounced";
