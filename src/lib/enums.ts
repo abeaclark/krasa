@@ -37,6 +37,12 @@ export const SITES = [
   "refundauto.com",
   "sunlightkids.com",
   "lessonsupply.com",
+  // Email-capture popup brands (see docs/email-capture.md).
+  "practicetesthq.com",
+  "teacherexamhq.com",
+  "realestateexamhq.com",
+  "solvedparty.com",
+  "sunday101.com",
 ] as const;
 
 export type SiteT = (typeof SITES)[number];

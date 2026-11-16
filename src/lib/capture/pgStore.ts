@@ -1,0 +1,118 @@
+import { client as sql } from "@/lib/db/client";
+import { newToken, pickOffer } from "./core";
+import type { CaptureStore, StatRow, SubscriberRow } from "./store";
+
+/**
+ * Postgres implementation of the capture store (tables in
+ * supabase/0005_email_capture.sql). Raw postgres-js rather than drizzle
+ * builders: every statement here is an upsert or an atomic increment, which
+ * reads more plainly as SQL. Never queries `leads`.
+ */
+
+const COUNTERS = { views: 1, closes: 1, clicks: 1, signups: 1 } as const;
+
+export const pgStore: CaptureStore = {
+  async assign(site, offers) {
+    if (!offers.length) return null;
+    await sql`
+      insert into capture_assign ${sql(offers.map((o) => ({ site, offer_id: o, n: 0 })))}
+      on conflict do nothing`;
+    const rows = await sql<{ offer_id: string; n: string }[]>`
+      select offer_id, n from capture_assign
+      where site = ${site} and offer_id in ${sql(offers)}`;
+    const counts: Record<string, number> = {};
+    for (const r of rows) counts[r.offer_id] = Number(r.n);
+    const pick = pickOffer(offers, counts);
+    if (pick) {
+      await sql`update capture_assign set n = n + 1 where site = ${site} and offer_id = ${pick}`;
+    }
+    return pick;
+  },
+
+  async bump(site, offer, device, day, field) {
+    if (!(field in COUNTERS)) return;
+    const col = sql(field);
+    await sql`
+      insert into capture_stats_daily (site, offer_id, device, day, ${col})
+      values (${site}, ${offer}, ${device}, ${day}, 1)
+      on conflict (site, offer_id, device, day)
+      do update set ${col} = capture_stats_daily.${col} + 1`;
+  },
+
+  async upsertSubscriber(input, at) {
+    const consent = { ...input.consent, at: at.toISOString(), page: input.page };
+    const rows = await sql<(SubscriberRow & { created: boolean })[]>`
+      insert into subscribers
+        (site, email, marketing, offer_id, variant, page, device, tz, country, utm, consent, code, token)
+      values
+        (${input.site}, ${input.email}, ${input.marketing}, ${input.offer}, ${input.variant},
+         ${input.page}, ${input.device}, ${input.tz}, ${input.country},
+         ${sql.json(input.utm)}, ${sql.json(consent)},
+         ${input.reward.code ? sql.json(input.reward.code) : null}, ${newToken()})
+      on conflict (site, email) do update set
+        marketing = excluded.marketing,
+        offer_id = excluded.offer_id,
+        variant = excluded.variant,
+        page = excluded.page,
+        device = excluded.device,
+        tz = excluded.tz,
+        country = excluded.country,
+        utm = excluded.utm,
+        consent = excluded.consent,
+        code = excluded.code,
+        status = case when subscribers.status = 'unsubscribed' then 'active' else subscribers.status end,
+        unsubscribed_at = case when subscribers.status = 'unsubscribed' then null else subscribers.unsubscribed_at end,
+        updated_at = now()
+      returning *, (xmax = 0) as created`;
+    const { created, ...row } = rows[0];
+    return { row: row as SubscriberRow, created };
+  },
+
+  async mergeAnswer(token, question, answer) {
+    const rows = await sql`
+      update subscribers
+      set answers = answers || ${sql.json({ [question]: answer })}, updated_at = now()
+      where token = ${token}
+      returning id`;
+    return rows.length > 0;
+  },
+
+  async unsubscribe(token, at) {
+    const rows = await sql<SubscriberRow[]>`
+      update subscribers set
+        status = case when status = 'active' then 'unsubscribed' else status end,
+        unsubscribed_at = coalesce(unsubscribed_at, ${at.toISOString()}),
+        updated_at = now()
+      where token = ${token}
+      returning *`;
+    return rows[0] ?? null;
+  },
+
+  async setStatusByEmail(email, status, site) {
+    const rows = site
+      ? await sql`update subscribers set status = ${status}, updated_at = now()
+                  where email = ${email} and site = ${site} and status <> ${status} returning id`
+      : await sql`update subscribers set status = ${status}, updated_at = now()
+                  where email = ${email} and status <> ${status} returning id`;
+    return rows.length;
+  },
+
+  async stats(fromDay, toDay) {
+    const rows = toDay
+      ? await sql<StatRow[]>`
+          select site, offer_id, device, to_char(day, 'YYYY-MM-DD') as day, views, closes, clicks, signups
+          from capture_stats_daily where day >= ${fromDay} and day <= ${toDay}
+          order by site, offer_id, device, day`
+      : await sql<StatRow[]>`
+          select site, offer_id, device, to_char(day, 'YYYY-MM-DD') as day, views, closes, clicks, signups
+          from capture_stats_daily where day >= ${fromDay}
+          order by site, offer_id, device, day`;
+    return rows.map((r) => ({ ...r }));
+  },
+
+  async subscriberCounts() {
+    const rows = await sql<{ site: string; status: string; n: number }[]>`
+      select site, status, count(*)::int as n from subscribers group by site, status order by site, status`;
+    return rows.map((r) => ({ ...r }));
+  },
+};

@@ -422,3 +422,18 @@ export async function refreshLeadCard(lead: Lead, reply?: { text: string; broadc
   await updateViaBot(ref, cardPayload(lead));
   if (reply) await postViaBot(ref.channel, { text: reply.text }, ref.ts, reply.broadcast);
 }
+
+/**
+ * Post a plain-text message that is not about a lead (e.g. the daily popup
+ * digest). Bot transport to `channel` (or the catch-all), then the webhook.
+ * Additive: nothing in the lead notifications above calls or depends on this.
+ */
+export async function postSlackText(channel: string | null, text: string): Promise<boolean> {
+  const fallback = process.env.SLACK_LEADS_CHANNEL?.trim() || DEFAULT_CHANNEL;
+  let ref = await postViaBot(channel || fallback, { text });
+  if (!ref && channel && channel !== fallback) ref = await postViaBot(fallback, { text });
+  if (ref) return true;
+  if (!process.env.SLACK_WEBHOOK_URL) return false;
+  await postViaWebhook({ text });
+  return true;
+}

@@ -6,6 +6,12 @@ import {
   uuid,
   text,
   index,
+  boolean,
+  integer,
+  bigint,
+  date,
+  primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { InferSelectModel, InferInsertModel, sql } from "drizzle-orm";
 import type { LeadStatusT } from "@/lib/enums";
@@ -101,3 +107,88 @@ export const heartbeats = pgTable(
 
 export type Heartbeat = InferSelectModel<typeof heartbeats>;
 export type NewHeartbeat = InferInsertModel<typeof heartbeats>;
+
+/**
+ * subscribers — the marketing list behind the email-capture popup.
+ *
+ * Deliberately NOT the `leads` table: the RefundAuto drip cron emails every
+ * refundauto.com lead and every lead pings Slack. A popup signup must never
+ * trigger either, so it lives here and nothing in the capture code reads or
+ * writes `leads` (enforced by tests/capture.test.ts).
+ *
+ * One row per (site, email). A repeat signup updates the row and re-sends the
+ * reward instead of creating a second row.
+ */
+export type SubscriberStatusT = "active" | "unsubscribed" | "bounced" | "complained";
+
+export const subscribers = pgTable(
+  "subscribers",
+  {
+    id: uuid("id")
+      .default(sql`gen_random_uuid()`)
+      .primaryKey(),
+    site: varchar("site").notNull(),
+    email: varchar("email").notNull(), // always lower-cased
+    status: varchar("status").$type<SubscriberStatusT>().default("active").notNull(),
+    /** False when an EU/UK/CA visitor left the opt-in box unticked: the reward
+     *  is delivered, marketing is never sent. */
+    marketing: boolean("marketing").default(true).notNull(),
+    offer_id: varchar("offer_id"),
+    variant: varchar("variant"),
+    page: varchar("page"),
+    device: varchar("device"),
+    tz: varchar("tz"),
+    country: varchar("country"),
+    answers: jsonb("answers")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    utm: jsonb("utm")
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    /** { text, euCheckbox, at, page } — the exact consent shown. */
+    consent: jsonb("consent").notNull(),
+    /** { value, expiresAt } — only ever used to write the reward email. */
+    code: jsonb("code"),
+    /** Opaque random token for unsubscribe + the one-tap answer. */
+    token: varchar("token").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    unsubscribed_at: timestamp("unsubscribed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("subscribers_site_email_key").on(t.site, t.email),
+    uniqueIndex("subscribers_token_key").on(t.token),
+    index("subscribers_email_idx").on(t.email),
+  ],
+);
+
+export type Subscriber = InferSelectModel<typeof subscribers>;
+export type NewSubscriber = InferInsertModel<typeof subscribers>;
+
+/** capture_stats_daily — popup counters; the source of truth for the A/B report. */
+export const captureStatsDaily = pgTable(
+  "capture_stats_daily",
+  {
+    site: varchar("site").notNull(),
+    offer_id: varchar("offer_id").notNull(),
+    device: varchar("device").notNull(),
+    /** Calendar day in Pacific/Honolulu. */
+    day: date("day").notNull(),
+    views: integer("views").default(0).notNull(),
+    closes: integer("closes").default(0).notNull(),
+    clicks: integer("clicks").default(0).notNull(),
+    signups: integer("signups").default(0).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.site, t.offer_id, t.device, t.day] })],
+);
+
+/** capture_assign — the round-robin counter per (site, offer). */
+export const captureAssign = pgTable(
+  "capture_assign",
+  {
+    site: varchar("site").notNull(),
+    offer_id: varchar("offer_id").notNull(),
+    n: bigint("n", { mode: "number" }).default(0).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.site, t.offer_id] })],
+);
