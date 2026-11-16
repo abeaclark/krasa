@@ -4,12 +4,21 @@ import type { CaptureStore, StatRow, SubscriberRow } from "./store";
 
 /**
  * Postgres implementation of the capture store (tables in
- * supabase/0005_email_capture.sql). Raw postgres-js rather than drizzle
+ * src/db/migrations/0001_email_capture.sql). Raw postgres-js rather than drizzle
  * builders: every statement here is an upsert or an atomic increment, which
  * reads more plainly as SQL. Never queries `leads`.
  */
 
 const COUNTERS = { views: 1, closes: 1, clicks: 1, signups: 1 } as const;
+
+/**
+ * JSON goes in as text and is cast in SQL (`${j(x)}::text::jsonb`), never via
+ * sql.json(). On Vercel, sql.json() objects reached postgres-js's wire writer
+ * unserialized ("The \"string\" argument must be of type string… Received an
+ * instance of Object", Nov 16) and every signup failed. The ::text cast also
+ * stops the driver JSON-encoding the string a second time.
+ */
+const j = (v: unknown): string | null => (v === null || v === undefined ? null : JSON.stringify(v));
 
 export const pgStore: CaptureStore = {
   async assign(site, offers) {
@@ -47,8 +56,8 @@ export const pgStore: CaptureStore = {
       values
         (${input.site}, ${input.email}, ${input.marketing}, ${input.offer}, ${input.variant},
          ${input.page}, ${input.device}, ${input.tz}, ${input.country},
-         ${sql.json(input.utm)}, ${sql.json(consent)},
-         ${input.reward.code ? sql.json(input.reward.code) : null}, ${newToken()})
+         ${j(input.utm)}::text::jsonb, ${j(consent)}::text::jsonb,
+         ${j(input.reward.code ?? null)}::text::jsonb, ${newToken()})
       on conflict (site, email) do update set
         marketing = excluded.marketing,
         offer_id = excluded.offer_id,
@@ -71,7 +80,7 @@ export const pgStore: CaptureStore = {
   async mergeAnswer(token, question, answer) {
     const rows = await sql`
       update subscribers
-      set answers = answers || ${sql.json({ [question]: answer })}, updated_at = now()
+      set answers = answers || ${j({ [question]: answer })}::text::jsonb, updated_at = now()
       where token = ${token}
       returning id`;
     return rows.length > 0;
