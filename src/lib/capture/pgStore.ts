@@ -52,12 +52,13 @@ export const pgStore: CaptureStore = {
     const consent = { ...input.consent, at: at.toISOString(), page: input.page };
     const rows = await sql<(SubscriberRow & { created: boolean })[]>`
       insert into subscribers
-        (site, email, marketing, offer_id, variant, page, device, tz, country, utm, consent, code, token)
+        (site, email, marketing, offer_id, variant, page, device, tz, country, utm, consent, code, context, token)
       values
         (${input.site}, ${input.email}, ${input.marketing}, ${input.offer}, ${input.variant},
          ${input.page}, ${input.device}, ${input.tz}, ${input.country},
          ${j(input.utm)}::text::jsonb, ${j(consent)}::text::jsonb,
-         ${j(input.reward.code ?? null)}::text::jsonb, ${newToken()})
+         ${j(input.reward.code ?? null)}::text::jsonb, ${j(input.reward.product ?? null)}::text::jsonb,
+         ${newToken()})
       on conflict (site, email) do update set
         marketing = excluded.marketing,
         offer_id = excluded.offer_id,
@@ -69,6 +70,7 @@ export const pgStore: CaptureStore = {
         utm = excluded.utm,
         consent = excluded.consent,
         code = excluded.code,
+        context = coalesce(excluded.context, subscribers.context),
         status = case when subscribers.status = 'unsubscribed' then 'active' else subscribers.status end,
         unsubscribed_at = case when subscribers.status = 'unsubscribed' then null else subscribers.unsubscribed_at end,
         updated_at = now()
@@ -117,6 +119,45 @@ export const pgStore: CaptureStore = {
           from capture_stats_daily where day >= ${fromDay}
           order by site, offer_id, device, day`;
     return rows.map((r) => ({ ...r }));
+  },
+
+  async recipients(q) {
+    const from = q.createdFrom ? q.createdFrom.toISOString() : null;
+    const rows = await sql<SubscriberRow[]>`
+      select s.* from subscribers s
+      where s.site = ${q.site}
+        and s.status = 'active'
+        and s.marketing
+        and s.created_at < ${q.createdTo.toISOString()}
+        and (${from}::timestamptz is null or s.created_at >= ${from}::timestamptz)
+        and (${q.requireContext ?? false} = false or s.context is not null)
+        and not exists (select 1 from capture_sends c where c.subscriber_id = s.id and c.key = ${q.withoutKey})
+      order by s.created_at
+      limit ${q.limit}`;
+    return rows.map((r) => ({ ...r }));
+  },
+
+  async claimSend(subscriberId, key) {
+    const rows = await sql`
+      insert into capture_sends (subscriber_id, key) values (${subscriberId}, ${key})
+      on conflict do nothing returning key`;
+    return rows.length > 0;
+  },
+
+  async finishSend(subscriberId, key, emailId) {
+    await sql`update capture_sends set email_id = ${emailId}, sent_at = now()
+              where subscriber_id = ${subscriberId} and key = ${key}`;
+  },
+
+  async releaseSend(subscriberId, key) {
+    await sql`delete from capture_sends where subscriber_id = ${subscriberId} and key = ${key}`;
+  },
+
+  async paidBookIds(email) {
+    const rows = await sql<{ book_id: string }[]>`
+      select distinct book_id from sk_orders
+      where lower(email) = ${email.toLowerCase()} and status = 'paid' and revoked_at is null`;
+    return rows.map((r) => r.book_id);
   },
 
   async subscriberCounts() {

@@ -219,6 +219,9 @@ export const subscribers = pgTable(
     consent: jsonb("consent").notNull(),
     /** { value, expiresAt } — only ever used to write the reward email. */
     code: jsonb("code"),
+    /** reward.product from the latest signup: what the follow-up emails sell
+     *  (src/lib/capture/product.ts). Null when the site sent none. */
+    context: jsonb("context"),
     /** Opaque random token for unsubscribe + the one-tap answer. */
     token: varchar("token").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -250,6 +253,27 @@ export const captureStatsDaily = pgTable(
     signups: integer("signups").default(0).notNull(),
   },
   (t) => [primaryKey({ columns: [t.site, t.offer_id, t.device, t.day] })],
+).enableRLS();
+
+/**
+ * capture_sends — every follow-up / campaign email a subscriber has been sent,
+ * one row per (subscriber, key). The row is written BEFORE the send (and
+ * removed if the send fails), so two overlapping cron runs can never mail the
+ * same step twice. Keys: `seq:<step>` (src/lib/capture/sequences.ts) and
+ * `camp:<id>` (src/lib/capture/campaigns.ts). `email_id` is Resend's id, or
+ * "skipped" when the step was deliberately not sent (e.g. they bought it).
+ */
+export const captureSends = pgTable(
+  "capture_sends",
+  {
+    subscriber_id: uuid("subscriber_id")
+      .notNull()
+      .references(() => subscribers.id, { onDelete: "cascade" }),
+    key: varchar("key").notNull(),
+    email_id: varchar("email_id"),
+    sent_at: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.subscriber_id, t.key] }), index("capture_sends_key_idx").on(t.key)],
 ).enableRLS();
 
 /** capture_assign — the round-robin counter per (site, offer). */

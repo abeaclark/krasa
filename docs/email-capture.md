@@ -19,6 +19,7 @@ does neither. `tests/capture.test.ts` fails if capture code references leads.
 | `GET` / `POST /api/subscribe/unsubscribe/[token]` | Unsubscribes at once, idempotent. GET returns JSON for the brand site's page; POST is RFC 8058 one-click. |
 | `POST /api/webhooks/resend` | `email.bounced` → `bounced`, `email.complained` → `complained` (Svix-signed). |
 | `GET /api/cron/capture-digest` | 7:00 HST: one Slack message with yesterday's views, signups, clicks and signup rate per site and offer. |
+| `GET /api/cron/capture-followups` | Every 30 min: due sequence steps, then any seasonal campaign in its window (below). |
 | `GET /api/capture/report?since=YYYY-MM-DD` | Bearer `CAPTURE_REPORT_SECRET`. Stats rows + subscriber counts by site/status. |
 
 ## Rules worth knowing
@@ -39,6 +40,33 @@ does neither. `tests/capture.test.ts` fails if capture code references leads.
   comma-separated.
 - The token is random and stored on the row (no `EMAIL_TOKEN_SECRET` needed).
 
+## Follow-ups and seasonal sends (phase 2)
+
+A site can send `reward.product` with a signup: the product its emails should
+sell (`src/lib/capture/product.ts`; Sunlight builds it in
+`src/lib/email-capture/emailProduct.ts`). It is kept on the row as `context`.
+
+- **Welcome email:** a "Want more like this?" card under the download (book,
+  cover, paperback button, $4.99 PDF link). Left out when `marketing = false`.
+- **Sequence** (`sequences.ts`, Sunlight only): day 2 a second free printable,
+  day 5 the book (paperback or PDF), day 9 a real customer quote + the other
+  age editions. The edition follows the one-tap age answer. Only active,
+  `marketing = true` rows with a `context`; a step more than 72 h overdue is
+  dropped; a book they already bought as a PDF (`sk_orders`) isn't pitched.
+- **Campaigns** (`campaigns.ts`): one-off sends to the whole list, as of
+  `sendAt`, until `until`. 2026: Black Friday (Nov 27, 7 AM HST) and the
+  last-minute PDF send (Dec 21, 7 AM HST). Christmas product data is generated
+  by sunlight's `scripts/email-campaign-data.ts` into `campaignData.ts`.
+- **Once only:** every send is claimed in `capture_sends` (subscriber, key)
+  before it goes and released if Resend fails, so overlapping runs never
+  double-send. Throttled to ~2/s with a 4-minute budget per run; the rest goes
+  next run.
+- **Clicks:** measured by Resend click tracking on the sending domain, not UTMs.
+
+Needs migration `0002_capture_followups` (`subscribers.context`,
+`capture_sends`) applied **before** this code deploys: the signup insert
+writes `context`.
+
 ## Code
 
 - `src/lib/capture/core.ts` — validation, round robin, HST day, expiry format
@@ -46,6 +74,8 @@ does neither. `tests/capture.test.ts` fails if capture code references leads.
 - `src/lib/capture/store.ts` / `pgStore.ts` — in-memory (tests) / Postgres
 - `src/lib/email/brands.ts` — sender, reply-to, color, origin, address per brand
 - `src/lib/email/reward.ts` — code / download / list templates
+- `src/lib/email/kit.ts`, `productBlocks.ts` — shared email shell and product card
+- `src/lib/capture/followups.ts` — the follow-up cron (sequence + campaigns)
 - `src/db/migrations/0001_email_capture.sql` — tables (RLS on, no policies); `supabase/0005` is the same SQL, kept as history
 
 ## Tests

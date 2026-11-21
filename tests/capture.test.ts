@@ -266,7 +266,7 @@ test("digest: one message, per site and offer, with signup rate", () => {
 test("reward emails escape what sites send", () => {
   const mail = buildRewardEmail({
     brand: brandFor("sunday101.com")!,
-    reward: { type: "list", title: "<script>x</script>", thing: null, offerShort: null, offerLine: null, checkoutHref: null, pdf: null, code: null },
+    reward: { type: "list", title: "<script>x</script>", thing: null, offerShort: null, offerLine: null, checkoutHref: null, pdf: null, code: null, product: null },
     links: { pdf: null, checkout: null },
     token: "t",
     tz: null,
@@ -298,8 +298,8 @@ test("resend webhook: any of several account secrets verifies", () => {
 });
 
 test("nothing in the capture code touches leads, the drip, or lead Slack pings", () => {
-  const roots = ["src/lib/capture", "src/app/api/capture", "src/app/api/subscribe", "src/app/api/webhooks", "src/app/api/cron/capture-digest"];
-  const files: string[] = ["src/lib/email/brands.ts", "src/lib/email/reward.ts", "src/lib/email/brandSend.ts"];
+  const roots = ["src/lib/capture", "src/app/api/capture", "src/app/api/subscribe", "src/app/api/webhooks", "src/app/api/cron/capture-digest", "src/app/api/cron/capture-followups"];
+  const files: string[] = ["src/lib/email/brands.ts", "src/lib/email/reward.ts", "src/lib/email/brandSend.ts", "src/lib/email/kit.ts", "src/lib/email/productBlocks.ts"];
   const walk = (d: string) => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);

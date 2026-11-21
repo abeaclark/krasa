@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { isKnownSite } from "@/lib/enums";
+import { parseProductContext, type ProductContext } from "./product";
 
 /**
  * Pure logic for the email-capture popup backend (no database, no network), so
@@ -140,6 +141,8 @@ export interface Reward {
   checkoutHref: string | null;
   pdf: string | null;
   code: { value: string; expiresAt: string } | null;
+  /** What the welcome email and the follow-ups sell (see product.ts). */
+  product: ProductContext | null;
 }
 
 export interface SubscribeInput {
@@ -164,6 +167,10 @@ export type ParseResult =
 
 function obj(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+
+function withReceived(ctx: ProductContext | null, title: string): ProductContext | null {
+  return ctx ? { ...ctx, received: title } : null;
 }
 
 export function parseSubscribe(body: unknown, now: Date = new Date()): ParseResult {
@@ -234,6 +241,7 @@ export function parseSubscribe(body: unknown, now: Date = new Date()): ParseResu
         checkoutHref: str(r.checkoutHref, 500),
         pdf,
         code,
+        product: withReceived(parseProductContext(r.product), title),
       },
       utm,
     },
