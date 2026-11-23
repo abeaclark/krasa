@@ -49,7 +49,7 @@ test("sites: the five new brands are known, the old ones kept", () => {
     assert.ok((SITES as readonly string[]).includes(s), s);
   }
   for (const b of Object.values(BRANDS)) {
-    assert.match(b!.from, /<hello@mail\./);
+    assert.match(b!.from, b!.site === "sunlightkids.com" ? /<hello@sunlightkids\.com>$/ : /<hello@mail\./);
     assert.ok(b!.postalAddress && b!.legalName);
   }
 });
@@ -232,6 +232,7 @@ test("answers merge; bounces and complaints stop mail", async () => {
   assert.equal(statusForEvent("email.complained"), "complained");
   assert.equal(statusForEvent("email.delivered"), null);
   assert.equal(brandForFrom("Sunlight Kids <hello@mail.sunlightkids.com>")?.site, "sunlightkids.com");
+  assert.equal(brandForFrom("Sunlight Kids <hello@sunlightkids.com>")?.site, "sunlightkids.com");
   assert.equal(await store.setStatusByEmail("parent+test@example.com", "complained", "sunlightkids.com"), 1);
   const before = sent.length;
   const r = await subscribe(store, body(), send, NOW);

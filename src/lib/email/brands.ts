@@ -28,13 +28,18 @@ export interface Brand {
 const LEGAL_NAME = "Krasa Development, LLC";
 const POSTAL_ADDRESS = "PO Box 186, Hanalei, HI 96714";
 
-function brand(domain: string, name: string, primary: string, replyTo?: string): Brand {
+/**
+ * `sendDomain` is the Resend-verified domain mail goes out from. Default
+ * `mail.<domain>`; a brand whose Resend account only has the apex verified
+ * passes the apex instead.
+ */
+function brand(domain: string, name: string, primary: string, replyTo?: string, sendDomain = `mail.${domain}`): Brand {
   const origin = `https://www.${domain}`;
   return {
     site: domain,
     name,
     logoText: name,
-    from: `${name} <hello@mail.${domain}>`,
+    from: `${name} <hello@${sendDomain}>`,
     replyTo: replyTo ?? `hello@${domain}`,
     primary,
     origin,
@@ -46,7 +51,10 @@ function brand(domain: string, name: string, primary: string, replyTo?: string):
 
 export const BRANDS: Partial<Record<SiteT, Brand>> = {
   "refundauto.com": brand("refundauto.com", "RefundAuto", "#3f51d1", "support@refundauto.com"),
-  "sunlightkids.com": brand("sunlightkids.com", "Sunlight Kids", "#e00b41"),
+  // Only the apex is verified in the krasadev Resend account (Nov 23): popup
+  // mail sent from mail.sunlightkids.com was rejected. Move to mail. once that
+  // subdomain is verified there.
+  "sunlightkids.com": brand("sunlightkids.com", "Sunlight Kids", "#e00b41", undefined, "sunlightkids.com"),
   "lessonsupply.com": brand("lessonsupply.com", "LessonSupply", "#2f4a3e"),
   "practicetesthq.com": brand("practicetesthq.com", "PracticeTestHQ", "#0b6e4f"),
   "teacherexamhq.com": brand("teacherexamhq.com", "TeacherExamHQ", "#0b6e4f"),
@@ -62,7 +70,7 @@ export function brandFor(site: string): Brand | null {
 /** The brand whose sending address appears in a From header, if any. */
 export function brandForFrom(from: string | null | undefined): Brand | null {
   if (!from) return null;
-  const m = from.toLowerCase().match(/@mail\.([a-z0-9.-]+)/);
+  const m = from.toLowerCase().match(/@(?:mail\.)?([a-z0-9.-]+)/);
   return m ? brandFor(m[1]) : null;
 }
 
