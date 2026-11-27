@@ -67,6 +67,34 @@ Needs migration `0002_capture_followups` (`subscribers.context`,
 `capture_sends`) applied **before** this code deploys: the signup insert
 writes `context`.
 
+## Every brand email: what must be true (read before adding a brand or a send)
+
+Learned the hard way on Nov 27, 2026 (Sunlight Black Friday send: no sender
+avatar in Gmail, every book cover a grey "?" box).
+
+1. **Images are static files on the brand's own domain.** `https://www.<domain>/...jpg|png`,
+   200 + `image/*`, forever (proxies fetch them when the email is opened, weeks later).
+   Never a function that renders at request time, never WebP/SVG (Outlook), ~360px wide
+   for 180px display. Sunlight: `public/email/covers/<handle>.jpg` via `pnpm email:covers`.
+2. **The send path checks anyway.** `sendBrandEmail` runs `dropBrokenImages`
+   (`src/lib/email/images.ts`): any image that doesn't answer 200 `image/*` is removed and
+   Slack gets a warning. A warning means fix the URL, not ignore it.
+3. **Before a campaign's `sendAt`:** send it to yourself (Gmail on phone and desktop) and
+   check images, links, sender name/avatar, and the preheader. `curl -sI` each image URL.
+4. **Sending domain verified in Resend** for the exact `from` in `brands.ts`
+   (`resend._domainkey.<sendDomain>` TXT + `send.<sendDomain>` MX/SPF), and the matching
+   `RESEND_API_KEY_<NAME>` env var on Krasa.
+5. **DMARC on the apex** (`_dmarc.<domain>`, at least `v=DMARC1; p=none;`). Gmail/Yahoo
+   require it for bulk mail.
+6. **Sender avatar in Gmail.** Gmail shows the Google profile photo of the From address
+   (or a BIMI logo, which needs DMARC enforcement + a paid VMC/CMC certificate). So each
+   From address gets a free Google account ("use my current email address") with the
+   brand's square logo as its photo. The From address must be able to receive mail for the
+   verification code (Cloudflare Email Routing on the apex; `mail.<domain>` has no MX, so
+   either add routing for it or send from the apex).
+7. **Brand config:** `brands.ts` entry (name, colour, `from`, reply-to that reaches a person,
+   postal address, privacy URL) and the site proxies `/api/subscribe/unsubscribe/<token>`.
+
 ## Code
 
 - `src/lib/capture/core.ts` — validation, round robin, HST day, expiry format

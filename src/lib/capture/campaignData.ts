@@ -17,7 +17,7 @@ export const SK_CHRISTMAS: {
     "pdfUrl": "/products/christmas-puzzle-book-for-kids#buy",
     "price": 10.99,
     "pdfPrice": 4.99,
-    "image": "/api/email/cover/christmas-puzzle-book-for-kids",
+    "image": "/email/covers/christmas-puzzle-book-for-kids.jpg",
     "pitch": "100+ Christmas themed sudoku, crosswords and word searches for kids, ages 6-12, one puzzle per page in big, clear print, with plain-language instructions, solving tips and a complete answer key in the back. Built for screen-free afternoons, travel days, classrooms and gifts.",
     "inside": [
       "Puzzle themes across the whole season: reindeer, ornaments, cookies, carols, snow days, gifts, trees and traditions",
@@ -36,7 +36,7 @@ export const SK_CHRISTMAS: {
     "pdfUrl": "/products/christmas-family-game-night-pack#buy",
     "price": null,
     "pdfPrice": 4.99,
-    "image": "/api/email/cover/christmas-family-game-night-pack",
+    "image": "/email/covers/christmas-family-game-night-pack.jpg",
     "pitch": "A 107-page printable Christmas game night: 60 bingo cards, 120 trivia questions in three levels, two riddle hunts, a lights walk, a family survey game, 60 This or That cards and 30 sixty-second challenges, with every answer key.",
     "inside": [
       "Picture bingo: 20 cards (3 x 3) with 20 Christmas pictures to color, plus picture calling cards. For ages 3–6.",

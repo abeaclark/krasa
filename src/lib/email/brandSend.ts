@@ -1,5 +1,22 @@
 import type { Brand } from "./brands";
 import type { SendResult } from "./client";
+import { dropBrokenImages } from "./images";
+import { channelForSite, postSlackText } from "@/lib/slack";
+
+const alerted = new Map<string, number>();
+
+/** Slack once an hour per broken URL; never throws. */
+async function alertBroken(site: string, subject: string, broken: string[]) {
+  const now = Date.now();
+  const fresh = broken.filter((u) => now - (alerted.get(u) ?? 0) > 3_600_000);
+  if (!fresh.length) return;
+  fresh.forEach((u) => alerted.set(u, now));
+  console.error("[capture] broken email images removed", site, subject, fresh);
+  await postSlackText(
+    channelForSite(site),
+    `:warning: ${site} email "${subject}" had broken images; they were removed before sending. Fix the URL(s):\n${fresh.map((u) => `• ${u}`).join("\n")}`,
+  ).catch(() => {});
+}
 
 /**
  * Brands can live in different Resend accounts (a domain is verified in exactly
@@ -42,6 +59,15 @@ export async function sendBrandEmail(opts: {
     console.warn(`[capture] ${envName} not set — skipping send`);
     return { ok: false, skipped: true, error: "Email is not configured" };
   }
+  // Never send a broken image (see images.ts).
+  let html = opts.html;
+  try {
+    const checked = await dropBrokenImages(opts.html);
+    html = checked.html;
+    if (checked.broken.length) await alertBroken(opts.brand.site, opts.subject, checked.broken);
+  } catch (err) {
+    console.error("[capture] image check threw", err);
+  }
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -51,7 +77,7 @@ export async function sendBrandEmail(opts: {
         reply_to: opts.brand.replyTo,
         to: [opts.to],
         subject: opts.subject,
-        html: opts.html,
+        html,
         text: opts.text,
         headers: {
           "List-Unsubscribe": `<${opts.unsubscribeUrl}>`,
